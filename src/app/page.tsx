@@ -168,6 +168,7 @@ export default function WorkoutTimer() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -204,6 +205,32 @@ export default function WorkoutTimer() {
     }
   }, []);
 
+  const playDing = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioContext =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      console.error("Audio play failed", e);
+    }
+  }, []);
+
   const speak = useCallback(
     (text: string) => {
       if (
@@ -212,13 +239,35 @@ export default function WorkoutTimer() {
         !window.speechSynthesis
       )
         return;
+
+      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
+      
+      // Mark as speaking to pause the timer
+      setIsSpeaking(true);
+
       const msg = new SpeechSynthesisUtterance(text);
       msg.lang = "zh-CN";
+      
+      msg.onend = () => {
+        setIsSpeaking(false);
+        playDing();
+      };
+
+      msg.onerror = (e) => {
+        console.error("Speech error", e);
+        setIsSpeaking(false);
+      };
+
       window.speechSynthesis.speak(msg);
     },
-    [ttsEnabled],
+    [ttsEnabled, playDing],
   );
+
+  const playDoubleDing = useCallback(() => {
+    playDing();
+    setTimeout(playDing, 300);
+  }, [playDing]);
 
   const handleNextStep = useCallback(() => {
     if (currentIdx < steps.length - 1) {
@@ -226,27 +275,38 @@ export default function WorkoutTimer() {
       setCurrentIdx(nextIdx);
       setTimeLeft(steps[nextIdx].duration);
       if (isRunning) {
-        speak(`${steps[nextIdx].name}。${steps[nextIdx].desc}`);
+        setIsSpeaking(true);
+        playDoubleDing();
+        if (ttsEnabled) {
+          setTimeout(() => {
+            speak(`${steps[nextIdx].name}。${steps[nextIdx].desc}`);
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            setIsSpeaking(false);
+          }, 1000);
+        }
       }
     } else {
+      playDoubleDing();
       setIsRunning(false);
       setIsFinished(true);
       if (noSleepRef.current) noSleepRef.current.disable();
     }
-  }, [currentIdx, steps, isRunning, speak]);
+  }, [currentIdx, steps, isRunning, speak, playDoubleDing, ttsEnabled]);
 
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
+    if (isRunning && timeLeft > 0 && !isSpeaking) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0 && isRunning) {
+    } else if (timeLeft === 0 && isRunning && !isSpeaking) {
       handleNextStep();
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, timeLeft, handleNextStep]);
+  }, [isRunning, timeLeft, handleNextStep, isSpeaking]);
 
   // Scroll to current item
   useEffect(() => {
@@ -276,6 +336,7 @@ export default function WorkoutTimer() {
   const handleReset = () => {
     setIsRunning(false);
     setIsFinished(false);
+    setIsSpeaking(false);
     setCurrentIdx(0);
     setTimeLeft(steps[0]?.duration || 0);
     if (typeof window !== "undefined" && window.speechSynthesis) {
