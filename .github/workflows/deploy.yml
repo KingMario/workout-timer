@@ -27,7 +27,7 @@ jobs:
       - name: Checkout workout repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/workout
+          repository: ${{ github.repository_owner }}/workout-plan
           token: ${{ secrets.DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
           path: workout-repo
 
