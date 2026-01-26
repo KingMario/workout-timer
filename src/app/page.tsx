@@ -148,8 +148,8 @@ const formatTime = (sec: number) => {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   let str = "";
-  if (m > 0) str += m + "分钟";
-  if (s > 0 || m === 0) str += s + "秒";
+  if (m > 0) str += m + "'";
+  if (s > 0 || m === 0) str += s + "\"";
   return str;
 };
 
