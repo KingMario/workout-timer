@@ -1,0 +1,46 @@
+name: Deploy to Workout Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workout-timer
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Checkout workout repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/workout
+          token: ${{ secrets.DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
+          path: workout-repo
+
+      - name: Sync assets to workout repo
+        run: |
+          cp out/index.html workout-repo/timer.html
+          rm -rf workout-repo/_next
+          cp -r out/_next workout-repo/
+          
+      - name: Commit and push to workout repo
+        run: |
+          cd workout-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add timer.html _next/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update timer.html and assets from workout-timer" && git push)
