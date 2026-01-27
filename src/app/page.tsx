@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import NoSleep from "nosleep.js";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import NoSleep from 'nosleep.js';
 
 // --- Types ---
 interface Step {
@@ -23,119 +23,119 @@ interface Section {
 // --- Data ---
 const PLAN_SECTIONS: Section[] = [
   {
-    name: "热身",
-    tips: "唤醒身体，润滑关节，为运动做好准备。全程保持自然呼吸。",
+    name: '热身',
+    tips: '唤醒身体，润滑关节，为运动做好准备。全程保持自然呼吸。',
     allowRounds: false,
     defaultRounds: 1,
     maxRounds: 1,
     steps: [
       {
-        name: "颈部画圆",
-        desc: "坐或站，下巴带动头部，缓慢向前、向下、向左、向后画半圆，再反向。重复。仅活动颈部。",
+        name: '颈部画圆',
+        desc: '坐或站，下巴带动头部，缓慢向前、向下、向左、向后画半圆，再反向。重复。仅活动颈部。',
         duration: 60,
       },
       {
-        name: "肩部时钟",
-        desc: "双臂自然下垂。想象肩膀是时针，缓慢地向前、向上、向后、向下画圈。正反方向各30秒。",
+        name: '肩部时钟',
+        desc: '双臂自然下垂。想象肩膀是时针，缓慢地向前、向上、向后、向下画圈。正反方向各30秒。',
         duration: 60,
       },
       {
-        name: "猫牛式",
-        desc: "四足跪姿。吸气塌腰抬头（牛式），呼气拱背低头（猫式）。感受脊柱一节节活动。",
+        name: '猫牛式',
+        desc: '四足跪姿。吸气塌腰抬头（牛式），呼气拱背低头（猫式）。感受脊柱一节节活动。',
         duration: 60,
       },
       {
-        name: "原地提膝走",
-        desc: "缓慢进行，将膝盖轻松地抬向胸前，手臂自然摆动。目的是温和提升心率。",
+        name: '原地提膝走',
+        desc: '缓慢进行，将膝盖轻松地抬向胸前，手臂自然摆动。目的是温和提升心率。',
         duration: 60,
       },
       {
-        name: "脚踝与手腕绕环",
-        desc: "坐姿，伸直腿和手臂，缓慢活动踝关节和手腕。",
+        name: '脚踝与手腕绕环',
+        desc: '坐姿，伸直腿和手臂，缓慢活动踝关节和手腕。',
         duration: 60,
       },
     ],
   },
   {
-    name: "力量训练",
-    tips: "注重肌肉感受与控制，而非速度和次数。",
+    name: '力量训练',
+    tips: '注重肌肉感受与控制，而非速度和次数。',
     allowRounds: true,
     defaultRounds: 2,
     maxRounds: 2,
     steps: [
       {
-        name: "靠墙天使",
-        desc: "背靠墙站立，头、上背、臀部贴墙。手臂呈“W”形贴墙，缓慢上举至“Y”形，再下放。感受肩胛骨的活动。",
+        name: '靠墙天使',
+        desc: '背靠墙站立，头、上背、臀部贴墙。手臂呈“W”形贴墙，缓慢上举至“Y”形，再下放。感受肩胛骨的活动。',
         duration: 45,
       },
-      { name: "休息", desc: "", duration: 15 },
+      { name: '休息', desc: '', duration: 15 },
       {
-        name: "坐姿自重深蹲",
-        desc: "坐在椅子边缘，双脚与肩同宽。缓慢站起至完全直立，再缓慢控制下坐（臀部轻触椅子即起）。全程核心收紧，背部挺直。",
+        name: '坐姿自重深蹲',
+        desc: '坐在椅子边缘，双脚与肩同宽。缓慢站起至完全直立，再缓慢控制下坐（臀部轻触椅子即起）。全程核心收紧，背部挺直。',
         duration: 45,
       },
-      { name: "休息", desc: "", duration: 15 },
+      { name: '休息', desc: '', duration: 15 },
       {
-        name: "臀桥",
-        desc: "仰卧，屈膝，双脚平放。缓慢将臀部抬离地面，至膝、髋、肩呈直线，顶峰收缩1秒，缓慢下放。",
+        name: '臀桥',
+        desc: '仰卧，屈膝，双脚平放。缓慢将臀部抬离地面，至膝、髋、肩呈直线，顶峰收缩1秒，缓慢下放。',
         duration: 45,
       },
-      { name: "休息", desc: "", duration: 15 },
+      { name: '休息', desc: '', duration: 15 },
       {
-        name: "跪姿俯卧撑",
-        desc: "采用跪姿，双手略宽于肩。身体下降时感受胸部拉伸，推起时不必完全伸直手臂，保持微屈。",
+        name: '跪姿俯卧撑',
+        desc: '采用跪姿，双手略宽于肩。身体下降时感受胸部拉伸，推起时不必完全伸直手臂，保持微屈。',
         duration: 45,
       },
-      { name: "休息", desc: "", duration: 15 },
+      { name: '休息', desc: '', duration: 15 },
       {
-        name: "鸟狗式",
-        desc: "四足跪姿。缓慢将对侧的手和腿向前向后伸直，与身体成一直线，保持核心收紧身体稳定，缓慢收回。换边。",
+        name: '鸟狗式',
+        desc: '四足跪姿。缓慢将对侧的手和腿向前向后伸直，与身体成一直线，保持核心收紧身体稳定，缓慢收回。换边。',
         duration: 45,
       },
-      { name: "休息", desc: "", duration: 15 },
+      { name: '休息', desc: '', duration: 15 },
     ],
   },
   {
-    name: "有氧",
-    tips: "采用“低冲击、持续性”动作，将心率维持在温和提升的水平。",
+    name: '有氧',
+    tips: '采用“低冲击、持续性”动作，将心率维持在温和提升的水平。',
     allowRounds: false,
     defaultRounds: 1,
     maxRounds: 1,
     steps: [
-      { name: "原地踏步", desc: "正常速度。", duration: 60 },
+      { name: '原地踏步', desc: '正常速度。', duration: 60 },
       {
-        name: "踏步+侧抬腿",
-        desc: "每侧交替进行，腿向外侧平缓抬起，感受髋部活动。",
+        name: '踏步+侧抬腿',
+        desc: '每侧交替进行，腿向外侧平缓抬起，感受髋部活动。',
         duration: 60,
       },
       {
-        name: "踏步+轻微提膝",
-        desc: "回到温和踏步，偶尔轻抬膝盖。",
+        name: '踏步+轻微提膝',
+        desc: '回到温和踏步，偶尔轻抬膝盖。',
         duration: 60,
       },
     ],
   },
   {
-    name: "放松",
-    tips: "专注于拉伸和呼吸，帮助身体恢复平静。",
+    name: '放松',
+    tips: '专注于拉伸和呼吸，帮助身体恢复平静。',
     allowRounds: false,
     defaultRounds: 1,
     maxRounds: 1,
     steps: [
       {
-        name: "股四头肌拉伸",
-        desc: "站立，一手扶墙，另一手抓住同侧脚踝，将脚跟轻轻拉向臀部，感受大腿前侧拉伸。",
+        name: '股四头肌拉伸',
+        desc: '站立，一手扶墙，另一手抓住同侧脚踝，将脚跟轻轻拉向臀部，感受大腿前侧拉伸。',
         duration: 30,
       },
-      { name: "换边", desc: "换另一侧拉伸。", duration: 30 },
+      { name: '换边', desc: '换另一侧拉伸。', duration: 30 },
       {
-        name: "胸部与肩部拉伸",
-        desc: "站立，双手在背后十指相扣，轻轻将手臂向上抬（如做不到，可双手扶墙，身体前倾）。",
+        name: '胸部与肩部拉伸',
+        desc: '站立，双手在背后十指相扣，轻轻将手臂向上抬（如做不到，可双手扶墙，身体前倾）。',
         duration: 30,
       },
       {
-        name: "腹式深呼吸",
-        desc: "坐或躺，一手放腹部。用鼻子缓慢吸气4秒，感受腹部鼓起；用嘴巴缓慢呼气6秒，感受腹部收紧。重复。",
+        name: '腹式深呼吸',
+        desc: '坐或躺，一手放腹部。用鼻子缓慢吸气4秒，感受腹部鼓起；用嘴巴缓慢呼气6秒，感受腹部收紧。重复。',
         duration: 30,
       },
     ],
@@ -147,9 +147,13 @@ const formatTime = (sec: number) => {
   sec = Math.max(0, Math.floor(sec));
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  let str = "";
-  if (m > 0) str += m + "'";
-  if (s > 0 || m === 0) str += s + "\"";
+  let str = '';
+  if (m > 0) {
+    str += m + "'";
+  }
+  if (s > 0 || m === 0) {
+    str += s + '"';
+  }
   return str;
 };
 
@@ -164,7 +168,6 @@ export default function WorkoutTimer() {
     },
   );
 
-  const [steps, setSteps] = useState<Step[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -178,12 +181,12 @@ export default function WorkoutTimer() {
   const planListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
-  // Initialize steps when sectionRounds changes
-  useEffect(() => {
-    if (!isMounted) return;
+  // Derive steps from sectionRounds using useMemo
+  const steps = React.useMemo(() => {
     let newSteps: Step[] = [];
     PLAN_SECTIONS.forEach((section) => {
       const rounds = section.allowRounds ? sectionRounds[section.name] : 1;
@@ -193,25 +196,36 @@ export default function WorkoutTimer() {
         );
       }
     });
-    setSteps(newSteps);
-    if (!isRunning && !isFinished) {
-      setTimeLeft(newSteps[0]?.duration || 0);
+    return newSteps;
+  }, [sectionRounds]);
+
+  // Reset time when steps change (only if not running/finished)
+  useEffect(() => {
+    if (isMounted && !isRunning && !isFinished && steps.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTimeLeft(steps[0].duration);
     }
-  }, [sectionRounds, isRunning, isFinished, isMounted]);
+  }, [steps, isRunning, isFinished, isMounted]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       noSleepRef.current = new NoSleep();
     }
   }, []);
 
   const playDing = useCallback(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     try {
       const AudioContext =
-        window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
-      
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      if (!AudioContext) {
+        return;
+      }
+
       const ctx = new AudioContext();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -219,7 +233,7 @@ export default function WorkoutTimer() {
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.type = "sine";
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
@@ -227,7 +241,7 @@ export default function WorkoutTimer() {
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
     } catch (e) {
-      console.error("Audio play failed", e);
+      console.error('Audio play failed', e);
     }
   }, []);
 
@@ -235,27 +249,28 @@ export default function WorkoutTimer() {
     (text: string) => {
       if (
         !ttsEnabled ||
-        typeof window === "undefined" ||
+        typeof window === 'undefined' ||
         !window.speechSynthesis
-      )
+      ) {
         return;
+      }
 
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
-      
+
       // Mark as speaking to pause the timer
       setIsSpeaking(true);
 
       const msg = new SpeechSynthesisUtterance(text);
-      msg.lang = "zh-CN";
-      
+      msg.lang = 'zh-CN';
+
       msg.onend = () => {
         setIsSpeaking(false);
         playDing();
       };
 
       msg.onerror = (e) => {
-        console.error("Speech error", e);
+        console.error('Speech error', e);
         setIsSpeaking(false);
       };
 
@@ -291,7 +306,9 @@ export default function WorkoutTimer() {
       playDoubleDing();
       setIsRunning(false);
       setIsFinished(true);
-      if (noSleepRef.current) noSleepRef.current.disable();
+      if (noSleepRef.current) {
+        noSleepRef.current.disable();
+      }
     }
   }, [currentIdx, steps, isRunning, speak, playDoubleDing, ttsEnabled]);
 
@@ -301,18 +318,21 @@ export default function WorkoutTimer() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isRunning && !isSpeaking) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleNextStep();
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
   }, [isRunning, timeLeft, handleNextStep, isSpeaking]);
 
   // Scroll to current item
   useEffect(() => {
-    const currentEl = planListRef.current?.querySelector(".current-step");
+    const currentEl = planListRef.current?.querySelector('.current-step');
     if (currentEl) {
-      currentEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      currentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentIdx]);
 
@@ -323,11 +343,13 @@ export default function WorkoutTimer() {
         return;
       }
       setIsRunning(true);
-      if (noSleepRef.current) noSleepRef.current.enable();
+      if (noSleepRef.current) {
+        noSleepRef.current.enable();
+      }
       speak(`${steps[currentIdx].name}。${steps[currentIdx].desc}`);
     } else {
       setIsRunning(false);
-      if (typeof window !== "undefined" && window.speechSynthesis) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     }
@@ -339,7 +361,7 @@ export default function WorkoutTimer() {
     setIsSpeaking(false);
     setCurrentIdx(0);
     setTimeLeft(steps[0]?.duration || 0);
-    if (typeof window !== "undefined" && window.speechSynthesis) {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
@@ -411,7 +433,7 @@ export default function WorkoutTimer() {
               {PLAN_SECTIONS.find((s) => s.name === steps[currentIdx]?.section)
                 ?.tips && (
                 <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg mt-2 border border-blue-100 dark:border-blue-900/50">
-                  💡{" "}
+                  💡{' '}
                   {
                     PLAN_SECTIONS.find(
                       (s) => s.name === steps[currentIdx]?.section,
@@ -487,8 +509,8 @@ export default function WorkoutTimer() {
                     onClick={() => jumpToStep(idx)}
                     className={`flex items-start p-3 rounded-lg cursor-pointer transition-colors ${
                       idx === currentIdx
-                        ? "current-step bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-100 dark:ring-blue-900/50"
-                        : "hover:bg-gray-50 dark:hover:bg-zinc-900/50"
+                        ? 'current-step bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-100 dark:ring-blue-900/50'
+                        : 'hover:bg-gray-50 dark:hover:bg-zinc-900/50'
                     }`}
                   >
                     <span className="w-8 text-gray-400 dark:text-zinc-500 text-sm mt-0.5">
@@ -496,7 +518,7 @@ export default function WorkoutTimer() {
                     </span>
                     <div className="flex-1 flex justify-between items-center">
                       <span
-                        className={`font-medium ${idx === currentIdx ? "text-blue-700 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"}`}
+                        className={`font-medium ${idx === currentIdx ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}
                       >
                         {step.name}
                       </span>
@@ -516,7 +538,7 @@ export default function WorkoutTimer() {
       <div className="fixed bottom-0 left-0 right-0 bg-green-50/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-green-100 dark:border-zinc-800 px-6 py-4 flex justify-between items-center shadow-lg z-20 transition-colors duration-300">
         <button
           onClick={() => setTtsEnabled(!ttsEnabled)}
-          className={`p-3 rounded-full transition-colors ${ttsEnabled ? "text-green-600 dark:text-green-400 bg-white dark:bg-zinc-800 shadow-sm" : "text-gray-400 dark:text-zinc-600 bg-gray-100 dark:bg-zinc-900"}`}
+          className={`p-3 rounded-full transition-colors ${ttsEnabled ? 'text-green-600 dark:text-green-400 bg-white dark:bg-zinc-800 shadow-sm' : 'text-gray-400 dark:text-zinc-600 bg-gray-100 dark:bg-zinc-900'}`}
           title="语音播报开关"
         >
           {ttsEnabled ? (
@@ -561,7 +583,7 @@ export default function WorkoutTimer() {
           <button
             onClick={togglePlay}
             className="w-16 h-16 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 text-green-600 dark:text-green-400 shadow-md hover:shadow-lg active:scale-95 transition-all border border-green-100 dark:border-zinc-700"
-            title={isRunning ? "暂停" : "开始"}
+            title={isRunning ? '暂停' : '开始'}
           >
             {isRunning ? (
               <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
