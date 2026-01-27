@@ -218,15 +218,15 @@ export default function WorkoutTimer() {
       return;
     }
     try {
-      const AudioContext =
+      const AudioContextClass =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      if (!AudioContext) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
         return;
       }
 
-      const ctx = new AudioContext();
+      const ctx = new AudioContextClass();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
