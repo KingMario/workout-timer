@@ -17,6 +17,12 @@ import {
 } from '../utils/planStorage';
 
 // --- Constants & Options ---
+const GENDER_OPTIONS = [
+  { value: 'Male', label: '男 (Male)' },
+  { value: 'Female', label: '女 (Female)' },
+  { value: 'Private', label: '保密 (Private)' },
+];
+
 const LEVEL_OPTIONS = [
   { value: 'Beginner', label: '初学者 (Beginner)' },
   { value: 'Intermediate', label: '中级/进阶 (Intermediate)' },
@@ -54,6 +60,7 @@ const FormDataSchema = z.object({
   duration: z.string().min(1, '请输入时长'),
   // Q1
   age: z.string().optional(),
+  gender: z.string().optional(),
   height: z.string().optional(),
   weight: z.string().optional(),
   // Q2
@@ -102,6 +109,7 @@ export default function CustomPlanWizard({
     resolver: zodResolver(FormDataSchema),
     defaultValues: {
       duration: '20',
+      gender: 'Private',
       level: 'Beginner',
       goal: 'Fat loss',
       frequency: 'Every weekday',
@@ -124,6 +132,7 @@ export default function CustomPlanWizard({
       // But let's reset to defaults to be clean.
       reset({
         duration: '20',
+        gender: 'Private',
         level: 'Beginner',
         goal: 'Fat loss',
         frequency: 'Every weekday',
@@ -160,6 +169,7 @@ export default function CustomPlanWizard({
     const prompt = `设计一套 ${data.duration} 分钟的居家健身方案，无需器械。包含活动性训练、轻量力量训练和有氧运动，并安排快速放松环节。请随时询问任何需要了解的信息，以便我为您优化方案。
 下面是我的个人信息：
 1. 基本信息: 
+   - 性别: ${data.gender || '保密'}
    - 年龄: ${data.age || '保密'}
    - 身高: ${data.height ? data.height + 'cm' : '保密'}
    - 体重: ${data.weight ? data.weight + 'kg' : '保密'}
@@ -376,7 +386,28 @@ ${codeBlockEnd}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <label
+                        htmlFor="gender"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      >
+                        性别
+                      </label>
+
+                      <select
+                        id="gender"
+                        {...register('gender')}
+                        className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-sm"
+                      >
+                        {GENDER_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label
                         htmlFor="age"
@@ -384,6 +415,7 @@ ${codeBlockEnd}
                       >
                         年龄
                       </label>
+
                       <input
                         id="age"
                         {...register('age')}
@@ -392,6 +424,7 @@ ${codeBlockEnd}
                         placeholder="可选"
                       />
                     </div>
+
                     <div>
                       <label
                         htmlFor="height"
@@ -399,6 +432,7 @@ ${codeBlockEnd}
                       >
                         身高 (cm)
                       </label>
+
                       <input
                         id="height"
                         {...register('height')}
@@ -407,6 +441,7 @@ ${codeBlockEnd}
                         placeholder="可选"
                       />
                     </div>
+
                     <div>
                       <label
                         htmlFor="weight"
@@ -414,6 +449,7 @@ ${codeBlockEnd}
                       >
                         体重 (kg)
                       </label>
+
                       <input
                         id="weight"
                         {...register('weight')}
