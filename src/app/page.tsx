@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import NoSleep from 'nosleep.js';
+import CustomPlanWizard from '../components/CustomPlanWizard';
+import type { WorkoutPlan } from '../schemas/workout-plan';
 
 // --- Types ---
 interface Step {
@@ -11,17 +13,11 @@ interface Step {
   section: string;
 }
 
-interface Section {
-  name: string;
-  tips: string;
-  allowRounds: boolean;
-  defaultRounds: number;
-  maxRounds: number;
-  steps: { name: string; desc: string; duration: number }[];
-}
+// Ensure compatibility with the schema
+type Section = WorkoutPlan[number];
 
 // --- Data ---
-const PLAN_SECTIONS: Section[] = [
+const DEFAULT_PLAN: Section[] = [
   {
     name: '热身',
     tips: '唤醒身体，润滑关节，为运动做好准备。全程保持自然呼吸。',
@@ -158,10 +154,13 @@ const formatTime = (sec: number) => {
 };
 
 export default function WorkoutTimer() {
+  const [planSections, setPlanSections] = useState<Section[]>(DEFAULT_PLAN);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+
   const [sectionRounds, setSectionRounds] = useState<Record<string, number>>(
     () => {
       const initial: Record<string, number> = {};
-      PLAN_SECTIONS.forEach((s) => {
+      DEFAULT_PLAN.forEach((s) => {
         initial[s.name] = s.defaultRounds;
       });
       return initial;
@@ -180,16 +179,44 @@ export default function WorkoutTimer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const planListRef = useRef<HTMLDivElement>(null);
 
+  const handleReset = useCallback(() => {
+    setIsRunning(false);
+    setIsFinished(false);
+    setIsSpeaking(false);
+    setCurrentIdx(0);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
+  // Update rounds when plan changes
+  useEffect(() => {
+    const initial: Record<string, number> = {};
+    planSections.forEach((s) => {
+      initial[s.name] = s.defaultRounds;
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSectionRounds(initial);
+    handleReset();
+  }, [planSections, handleReset]);
+
+  const handlePlanLoaded = (newPlan: WorkoutPlan) => {
+    setPlanSections(newPlan);
+    // Reset rounds will happen in the useEffect above
+  };
+
   // Derive steps from sectionRounds using useMemo
   const steps = React.useMemo(() => {
     let newSteps: Step[] = [];
-    PLAN_SECTIONS.forEach((section) => {
-      const rounds = section.allowRounds ? sectionRounds[section.name] : 1;
+    planSections.forEach((section) => {
+      const rounds = section.allowRounds
+        ? sectionRounds[section.name] || section.defaultRounds
+        : 1;
       for (let i = 0; i < rounds; i++) {
         newSteps = newSteps.concat(
           section.steps.map((s) => ({ ...s, section: section.name })),
@@ -197,7 +224,7 @@ export default function WorkoutTimer() {
       }
     });
     return newSteps;
-  }, [sectionRounds]);
+  }, [sectionRounds, planSections]);
 
   // Reset time when steps change (only if not running/finished)
   useEffect(() => {
@@ -355,17 +382,6 @@ export default function WorkoutTimer() {
     }
   };
 
-  const handleReset = () => {
-    setIsRunning(false);
-    setIsFinished(false);
-    setIsSpeaking(false);
-    setCurrentIdx(0);
-    setTimeLeft(steps[0]?.duration || 0);
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  };
-
   const jumpToStep = (idx: number) => {
     setCurrentIdx(idx);
     setTimeLeft(steps[idx].duration);
@@ -385,11 +401,25 @@ export default function WorkoutTimer() {
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
+      <CustomPlanWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onPlanLoaded={handlePlanLoaded}
+      />
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-5 py-4 border-b border-gray-100 dark:border-zinc-800 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-          💪 20分钟健身计时
-        </h1>
+        <div className="flex justify-between items-start">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            💪 灵动健身 (FlexWorkout)
+          </h1>
+          <button
+            onClick={() => setIsWizardOpen(true)}
+            className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+          >
+            ✨ 定制计划
+          </button>
+        </div>
 
         <div className="mt-4 flex flex-col gap-2">
           <div className="w-full h-3 bg-blue-50 dark:bg-zinc-900 rounded-full overflow-hidden">
@@ -430,12 +460,12 @@ export default function WorkoutTimer() {
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                 {steps[currentIdx]?.desc}
               </div>
-              {PLAN_SECTIONS.find((s) => s.name === steps[currentIdx]?.section)
+              {planSections.find((s) => s.name === steps[currentIdx]?.section)
                 ?.tips && (
                 <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg mt-2 border border-blue-100 dark:border-blue-900/50">
                   💡{' '}
                   {
-                    PLAN_SECTIONS.find(
+                    planSections.find(
                       (s) => s.name === steps[currentIdx]?.section,
                     )?.tips
                   }
@@ -463,9 +493,7 @@ export default function WorkoutTimer() {
             steps.map((step, idx) => {
               const isFirstInSection =
                 idx === 0 || steps[idx - 1].section !== step.section;
-              const section = PLAN_SECTIONS.find(
-                (s) => s.name === step.section,
-              );
+              const section = planSections.find((s) => s.name === step.section);
 
               return (
                 <React.Fragment key={idx}>
@@ -486,7 +514,9 @@ export default function WorkoutTimer() {
                       {section?.allowRounds && (
                         <select
                           disabled={isRunning}
-                          value={sectionRounds[step.section]}
+                          value={
+                            sectionRounds[step.section] || section.defaultRounds
+                          }
                           onChange={(e) => {
                             setSectionRounds((prev) => ({
                               ...prev,
