@@ -218,12 +218,10 @@ describe('WorkoutTimer', () => {
     // Finish initial speech to start timer countdown
     finishSpeech();
 
-    // Advance time by 5 seconds one at a time (60s - 5s = 55s remaining)
-    for (let i = 0; i < 5; i++) {
-      await act(async () => {
-        vi.advanceTimersByTime(1000);
-      });
-    }
+    // Advance time by 5 seconds (60s - 5s = 55s remaining)
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
 
     // Pause the timer
     await act(async () => {
@@ -242,12 +240,10 @@ describe('WorkoutTimer', () => {
     // Finish speech again
     finishSpeech();
 
-    // Advance time by 5 more seconds one at a time (55s - 5s = 50s)
-    for (let i = 0; i < 5; i++) {
-      await act(async () => {
-        vi.advanceTimersByTime(1000);
-      });
-    }
+    // Advance time by 5 more seconds (55s - 5s = 50s)
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
 
     // Time should now be around 50s
     const newRemainingText = screen.getByText(/剩余：/).textContent;

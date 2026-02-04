@@ -392,15 +392,14 @@ export default function WorkoutTimer() {
   const jumpToStep = (idx: number) => {
     const isSameStep = idx === currentIdx;
     setCurrentIdx(idx);
-    if (!isRunning && isSameStep) {
-      // If paused and same step, keep current time
-    } else {
-      // Otherwise reset to the new step's initial time
+    if (isRunning || !isSameStep) {
+      // Reset to the new step's initial time when running or jumping to a different step
       setTimeLeft(steps[idx].duration);
       if (isRunning) {
         speak(`${steps[idx].name}。${steps[idx].desc}`);
       }
     }
+    // Otherwise if paused and same step, keep current time
   };
 
   const totalTime = steps.reduce((acc, s) => acc + s.duration, 0);
