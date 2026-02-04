@@ -225,7 +225,7 @@ export default function WorkoutTimer() {
     return newSteps;
   }, [sectionRounds, planSections]);
 
-  //Reset time when steps change or component mounts (but not when pausing)
+  // Reset time when steps change or component mounts (but not when pausing)
   useEffect(() => {
     if (
       isMounted &&
@@ -383,8 +383,6 @@ export default function WorkoutTimer() {
       speak(`${steps[currentIdx].name}。${steps[currentIdx].desc}`);
     } else {
       setIsRunning(false);
-      // 在此确保暂停时保存当前剩余时间
-      setTimeLeft((prev) => Math.max(0, prev));
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -395,10 +393,9 @@ export default function WorkoutTimer() {
     const isSameStep = idx === currentIdx;
     setCurrentIdx(idx);
     if (!isRunning && isSameStep) {
-      // 在暂停状态下如果是同一步骤，保持当前剩余时间
       // If paused and same step, keep current time
     } else {
-      // 否则重置为新步骤的初始时间
+      // Otherwise reset to the new step's initial time
       setTimeLeft(steps[idx].duration);
       if (isRunning) {
         speak(`${steps[idx].name}。${steps[idx].desc}`);
