@@ -206,4 +206,176 @@ describe('WorkoutTimer', () => {
 
     expect(screen.getByText(/恭喜完成全部锻炼/)).toBeInTheDocument();
   });
+
+  it('retains remaining time when pausing immediately after play', async () => {
+    render(<WorkoutTimer />);
+
+    // Start the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    // Finish initial speech to start timer countdown
+    finishSpeech();
+
+    // Advance time by 5 seconds one at a time (60s - 5s = 55s remaining)
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    // Pause the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('暂停'));
+    });
+
+    // Check remaining time - should be 55 seconds
+    const remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toContain('55"');
+
+    // Resume the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    // Finish speech again
+    finishSpeech();
+
+    // Advance time by 5 more seconds one at a time (55s - 5s = 50s)
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    // Time should now be around 50s
+    const newRemainingText = screen.getByText(/剩余：/).textContent;
+    expect(newRemainingText).toContain('50"');
+  });
+
+  it('correctly handles switching steps while paused', async () => {
+    render(<WorkoutTimer />);
+
+    // Start the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    // Finish initial speech
+    finishSpeech();
+
+    // Advance time by 10 seconds
+    await act(async () => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    // Pause the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('暂停'));
+    });
+
+    // Jump to step 2 (肩部时钟) while paused
+    const step2Elements = screen.getAllByText('肩部时钟');
+    const step2Name = step2Elements.find(
+      (el) => el.tagName === 'SPAN' && el.className.includes('font-medium'),
+    );
+
+    await act(async () => {
+      if (step2Name) {
+        fireEvent.click(step2Name);
+      } else {
+        fireEvent.click(step2Elements[step2Elements.length - 1]);
+      }
+    });
+
+    // When jumping to a new step while paused, it should load the new step's duration
+    // because prev will be 0 (different step), so it falls back to steps[idx].duration
+    const remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toMatch(/1'|60"/); // Either 1 minute or 60 seconds
+
+    // Now resume playing
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    // Should speak the new step name
+    expect(mockSpeak).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('肩部时钟') }),
+    );
+  });
+
+  it('handles repeated pause-resume operations correctly', async () => {
+    render(<WorkoutTimer />);
+
+    // Start the timer
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    // Finish initial speech
+    finishSpeech();
+
+    // First pause-resume cycle (60s - 3s = 57s left)
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('暂停'));
+    });
+
+    let remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toContain('57"');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    finishSpeech();
+
+    // Second pause-resume cycle (57s - 7s = 50s left)
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('暂停'));
+    });
+
+    remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toContain('50"');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    finishSpeech();
+
+    // Third pause-resume cycle (50s - 10s = 40s left)
+    await act(async () => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('暂停'));
+    });
+
+    remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toContain('40"');
+
+    // Final resume (40s - 5s = 35s left)
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    finishSpeech();
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    remainingText = screen.getByText(/剩余：/).textContent;
+    expect(remainingText).toContain('35"');
+  });
 });

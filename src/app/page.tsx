@@ -226,13 +226,21 @@ export default function WorkoutTimer() {
     return newSteps;
   }, [sectionRounds, planSections]);
 
-  // Reset time when steps change (only if not running/finished)
+  //Reset time when steps change or component mounts (but not when pausing)
   useEffect(() => {
-    if (isMounted && !isRunning && !isFinished && steps.length > 0) {
+    if (
+      isMounted &&
+      !isRunning &&
+      !isFinished &&
+      steps.length > 0 &&
+      currentIdx === 0
+    ) {
+      // Only reset to first step if we're actually on the first step
+      // This prevents resetting time when pausing on other steps
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTimeLeft(steps[0].duration);
     }
-  }, [steps, isRunning, isFinished, isMounted]);
+  }, [steps, isMounted]); // Removed isRunning and isFinished from dependencies
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -376,6 +384,8 @@ export default function WorkoutTimer() {
       speak(`${steps[currentIdx].name}。${steps[currentIdx].desc}`);
     } else {
       setIsRunning(false);
+      // 在此确保暂停时保存当前剩余时间
+      setTimeLeft((prev) => Math.max(0, prev));
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -383,10 +393,17 @@ export default function WorkoutTimer() {
   };
 
   const jumpToStep = (idx: number) => {
+    const isSameStep = idx === currentIdx;
     setCurrentIdx(idx);
-    setTimeLeft(steps[idx].duration);
-    if (isRunning) {
-      speak(`${steps[idx].name}。${steps[idx].desc}`);
+    if (!isRunning && isSameStep) {
+      // 在暂停状态下如果是同一步骤，保持当前剩余时间
+      // If paused and same step, keep current time
+    } else {
+      // 否则重置为新步骤的初始时间
+      setTimeLeft(steps[idx].duration);
+      if (isRunning) {
+        speak(`${steps[idx].name}。${steps[idx].desc}`);
+      }
     }
   };
 
