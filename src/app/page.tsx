@@ -190,7 +190,6 @@ export default function WorkoutTimer() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -200,7 +199,7 @@ export default function WorkoutTimer() {
     planSections.forEach((s) => {
       initial[s.name] = s.defaultRounds;
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setSectionRounds(initial);
     handleReset();
   }, [planSections, handleReset]);
@@ -237,10 +236,11 @@ export default function WorkoutTimer() {
     ) {
       // Only reset to first step if we're actually on the first step
       // This prevents resetting time when pausing on other steps
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+
       setTimeLeft(steps[0].duration);
     }
-  }, [steps, isMounted]); // Removed isRunning and isFinished from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, isMounted]); // Intentionally not including isRunning, isFinished, currentIdx to prevent resetting timeLeft when pausing
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -353,7 +353,6 @@ export default function WorkoutTimer() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isRunning && !isSpeaking) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleNextStep();
     }
     return () => {
