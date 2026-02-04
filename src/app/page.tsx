@@ -190,7 +190,6 @@ export default function WorkoutTimer() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -200,7 +199,7 @@ export default function WorkoutTimer() {
     planSections.forEach((s) => {
       initial[s.name] = s.defaultRounds;
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setSectionRounds(initial);
     handleReset();
   }, [planSections, handleReset]);
@@ -226,13 +225,22 @@ export default function WorkoutTimer() {
     return newSteps;
   }, [sectionRounds, planSections]);
 
-  // Reset time when steps change (only if not running/finished)
+  // Reset time when steps change or component mounts (but not when pausing)
   useEffect(() => {
-    if (isMounted && !isRunning && !isFinished && steps.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (
+      isMounted &&
+      !isRunning &&
+      !isFinished &&
+      steps.length > 0 &&
+      currentIdx === 0
+    ) {
+      // Only reset to first step if we're actually on the first step
+      // This prevents resetting time when pausing on other steps
+
       setTimeLeft(steps[0].duration);
     }
-  }, [steps, isRunning, isFinished, isMounted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, isMounted]); // Intentionally not including isRunning, isFinished, currentIdx to prevent resetting timeLeft when pausing
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -345,7 +353,6 @@ export default function WorkoutTimer() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isRunning && !isSpeaking) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleNextStep();
     }
     return () => {
@@ -383,11 +390,16 @@ export default function WorkoutTimer() {
   };
 
   const jumpToStep = (idx: number) => {
+    const isSameStep = idx === currentIdx;
     setCurrentIdx(idx);
-    setTimeLeft(steps[idx].duration);
-    if (isRunning) {
-      speak(`${steps[idx].name}。${steps[idx].desc}`);
+    if (isRunning || !isSameStep) {
+      // Reset to the new step's initial time when running or jumping to a different step
+      setTimeLeft(steps[idx].duration);
+      if (isRunning) {
+        speak(`${steps[idx].name}。${steps[idx].desc}`);
+      }
     }
+    // Otherwise if paused and same step, keep current time
   };
 
   const totalTime = steps.reduce((acc, s) => acc + s.duration, 0);
