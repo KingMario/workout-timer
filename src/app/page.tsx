@@ -179,37 +179,6 @@ export default function WorkoutTimer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const planListRef = useRef<HTMLDivElement>(null);
 
-  const handleReset = useCallback(() => {
-    setIsRunning(false);
-    setIsFinished(false);
-    setIsSpeaking(false);
-    setCurrentIdx(0);
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMounted(true);
-  }, []);
-
-  // Update rounds when plan changes
-  useEffect(() => {
-    const initial: Record<string, number> = {};
-    planSections.forEach((s) => {
-      initial[s.name] = s.defaultRounds;
-    });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSectionRounds(initial);
-    handleReset();
-  }, [planSections, handleReset]);
-
-  const handlePlanLoaded = (newPlan: WorkoutPlan) => {
-    setPlanSections(newPlan);
-    // Reset rounds will happen in the useEffect above
-  };
-
   // Derive steps from sectionRounds using useMemo
   const steps = React.useMemo(() => {
     let newSteps: Step[] = [];
@@ -226,13 +195,46 @@ export default function WorkoutTimer() {
     return newSteps;
   }, [sectionRounds, planSections]);
 
-  // Reset time when steps change (only if not running/finished)
+  // Keep a ref to steps for handleReset to avoid dependency loop
+  const stepsRef = useRef<Step[]>(steps);
   useEffect(() => {
-    if (isMounted && !isRunning && !isFinished && steps.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTimeLeft(steps[0].duration);
+    stepsRef.current = steps;
+  }, [steps]);
+
+  const handleReset = useCallback(() => {
+    setIsRunning(false);
+    setIsFinished(false);
+    setIsSpeaking(false);
+    setCurrentIdx(0);
+    if (stepsRef.current.length > 0) {
+      setTimeLeft(stepsRef.current[0].duration);
     }
-  }, [steps, isRunning, isFinished, isMounted]);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
+
+  // Update rounds when plan changes
+  useEffect(() => {
+    const initial: Record<string, number> = {};
+    planSections.forEach((s) => {
+      initial[s.name] = s.defaultRounds;
+    });
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSectionRounds(initial);
+    handleReset();
+  }, [planSections, handleReset]);
+
+  const handlePlanLoaded = (newPlan: WorkoutPlan) => {
+    setPlanSections(newPlan);
+    // Reset rounds will happen in the useEffect above
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
