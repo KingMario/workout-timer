@@ -1,6 +1,6 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CustomPlanWizard from './CustomPlanWizard';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock clipboard
 Object.assign(navigator, {
@@ -179,7 +179,7 @@ describe('CustomPlanWizard', () => {
     });
 
     // Enter Title
-    const titleInput = screen.getByPlaceholderText('例如: 爸爸的减脂计划');
+    const titleInput = screen.getByPlaceholderText('例如: 减脂计划, 周末暴汗');
     fireEvent.change(titleInput, { target: { value: 'My Awesome Plan' } });
 
     // Save

@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import type { WorkoutPlan } from '../schemas/workout-plan';
 import {
   WorkoutPlanSchema,
   getJsonSchemaString,
 } from '../schemas/workout-plan';
-import type { WorkoutPlan } from '../schemas/workout-plan';
 import {
-  savePlan,
-  getSavedPlans,
   deletePlan,
+  getSavedPlans,
+  savePlan,
   type SavedPlan,
 } from '../utils/planStorage';
 
@@ -614,8 +614,8 @@ ${codeBlockEnd}
                       value={planTitle}
                       onChange={(e) => setPlanTitle(e.target.value)}
                       className="w-full p-2 border border-blue-200 dark:border-blue-800 rounded bg-white dark:bg-zinc-900 placeholder-gray-400 text-sm"
-                      placeholder="例如: 爸爸的减脂计划"
-                    />
+                      placeholder="例如: 减脂计划, 周末暴汗"
+                    />{' '}
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       * 输入名字将自动保存到“我的计划”中，方便下次直接使用。
                     </p>
