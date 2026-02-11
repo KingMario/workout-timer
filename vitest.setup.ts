@@ -31,6 +31,8 @@ Object.defineProperty(window, 'SpeechSynthesisUtterance', {
 
 // Mock AudioContext
 class AudioContextMock {
+  state = 'suspended';
+  resume = vi.fn().mockResolvedValue(undefined);
   createOscillator = vi.fn(() => ({
     connect: vi.fn(),
     start: vi.fn(),
@@ -41,6 +43,12 @@ class AudioContextMock {
   createGain = vi.fn(() => ({
     connect: vi.fn(),
     gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+  }));
+  createBuffer = vi.fn(() => ({}));
+  createBufferSource = vi.fn(() => ({
+    buffer: null,
+    connect: vi.fn(),
+    start: vi.fn(),
   }));
   currentTime = 0;
   destination = {};

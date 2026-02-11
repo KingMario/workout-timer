@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import NoSleep from 'nosleep.js';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CustomPlanWizard from '../components/CustomPlanWizard';
 import type { WorkoutPlan } from '../schemas/workout-plan';
 
@@ -178,6 +178,7 @@ export default function WorkoutTimer() {
   const noSleepRef = useRef<NoSleep | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const planListRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Derive steps from sectionRounds using useMemo
   const steps = React.useMemo(() => {
@@ -242,20 +243,54 @@ export default function WorkoutTimer() {
     }
   }, []);
 
+  const initAudio = useCallback(() => {
+    if (typeof window === 'undefined' || audioCtxRef.current) {
+      return;
+    }
+    const AudioContextClass =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtxRef.current = new AudioContextClass();
+    }
+  }, []);
+
+  const unlockAudio = useCallback(() => {
+    if (!audioCtxRef.current) {
+      initAudio();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx) {
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      // Play a silent buffer to unlock iOS audio
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    }
+  }, [initAudio]);
+
   const playDing = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
     }
     try {
-      const AudioContextClass =
-        window.AudioContext ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).webkitAudioContext;
-      if (!AudioContextClass) {
+      if (!audioCtxRef.current) {
+        initAudio();
+      }
+      const ctx = audioCtxRef.current;
+      if (!ctx) {
         return;
       }
 
-      const ctx = new AudioContextClass();
+      // Resume context if suspended (common on mobile)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -264,7 +299,7 @@ export default function WorkoutTimer() {
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
 
       osc.start();
@@ -272,7 +307,7 @@ export default function WorkoutTimer() {
     } catch (e) {
       console.error('Audio play failed', e);
     }
-  }, []);
+  }, [initAudio]);
 
   const speak = useCallback(
     (text: string) => {
@@ -366,6 +401,9 @@ export default function WorkoutTimer() {
   }, [currentIdx]);
 
   const togglePlay = () => {
+    // Initialize/Resume audio on user gesture
+    unlockAudio();
+
     if (!isRunning) {
       if (isFinished) {
         handleReset();
@@ -385,6 +423,7 @@ export default function WorkoutTimer() {
   };
 
   const jumpToStep = (idx: number) => {
+    unlockAudio();
     setCurrentIdx(idx);
     setTimeLeft(steps[idx].duration);
     if (isRunning) {

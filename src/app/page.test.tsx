@@ -1,14 +1,14 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import WorkoutTimer from './page';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
-  vi,
-  describe,
-  it,
-  expect,
-  beforeEach,
   afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
   type Mock,
 } from 'vitest';
+import WorkoutTimer from './page';
 
 // Access the global mocks setup in vitest.setup.ts
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
