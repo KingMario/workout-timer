@@ -119,10 +119,10 @@ describe('CustomPlanWizard', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('应用计划'));
+      fireEvent.click(screen.getByText('保存并应用'));
     });
 
-    expect(onPlanLoaded).toHaveBeenCalledWith(validPlan);
+    expect(onPlanLoaded).toHaveBeenCalledWith(validPlan, expect.any(String));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -231,7 +231,7 @@ describe('CustomPlanWizard', () => {
 
     // Load plan
     fireEvent.click(screen.getByText('载入'));
-    expect(onPlanLoaded).toHaveBeenCalledWith(planData);
+    expect(onPlanLoaded).toHaveBeenCalledWith(planData, '123');
     expect(onClose).toHaveBeenCalled();
   });
 });

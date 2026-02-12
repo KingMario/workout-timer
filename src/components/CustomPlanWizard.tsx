@@ -83,13 +83,19 @@ type FormData = z.infer<typeof FormDataSchema>;
 interface CustomPlanWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlanLoaded: (plan: WorkoutPlan) => void;
+  onPlanLoaded: (plan: WorkoutPlan, id?: string) => void;
+  onRestoreDefault?: () => void; // New prop for restoring default
+  hasCustomPlan?: boolean; // New prop to show/hide restore button
+  activePlanId?: string; // New prop for current active plan
 }
 
 export default function CustomPlanWizard({
   isOpen,
   onClose,
   onPlanLoaded,
+  onRestoreDefault,
+  hasCustomPlan,
+  activePlanId,
 }: CustomPlanWizardProps) {
   const [mode, setMode] = useState<'create' | 'saved'>('create'); // 'create' or 'saved'
   const [step, setStep] = useState(1);
@@ -209,11 +215,11 @@ ${codeBlockEnd}
       const validated = WorkoutPlanSchema.parse(parsed);
 
       // Save plan logic
-      if (planTitle.trim()) {
-        savePlan(planTitle.trim(), validated);
-      }
+      const titleToSave =
+        planTitle.trim() || `未命名计划 ${new Date().toLocaleString()}`;
+      const saved = savePlan(titleToSave, validated);
+      onPlanLoaded(validated, saved.id);
 
-      onPlanLoaded(validated);
       onClose();
     } catch (e) {
       console.error(e);
@@ -224,7 +230,9 @@ ${codeBlockEnd}
       } else if (e instanceof SyntaxError) {
         setError('JSON 语法错误，请检查是否完整。');
       } else {
-        setError('无效的计划数据。');
+        setError(
+          '无效的计划数据: ' + (e instanceof Error ? e.message : String(e)),
+        );
       }
     }
   };
@@ -237,8 +245,15 @@ ${codeBlockEnd}
   };
 
   const handleLoadPlan = (plan: SavedPlan) => {
-    onPlanLoaded(plan.data);
+    onPlanLoaded(plan.data, plan.id);
     onClose();
+  };
+
+  const handleRestoreDefaultAndClose = () => {
+    if (onRestoreDefault) {
+      onRestoreDefault();
+      onClose();
+    }
   };
 
   return (
@@ -305,37 +320,80 @@ ${codeBlockEnd}
                   暂无保存的计划，快去创建一个吧！
                 </div>
               ) : (
-                savedPlans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className="flex justify-between items-center p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-lg border border-gray-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-900 transition-colors"
-                  >
-                    <div>
-                      <div className="font-bold text-gray-800 dark:text-gray-200">
-                        {plan.title}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {new Date(plan.createdAt).toLocaleDateString()} ·{' '}
-                        {plan.data.length} 个阶段
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleLoadPlan(plan)}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                <>
+                  {savedPlans.map((plan) => {
+                    const isActive = plan.id === activePlanId;
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`flex justify-between items-center p-4 rounded-lg border transition-all ${
+                          isActive
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-900/50 shadow-sm'
+                            : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-900'
+                        }`}
                       >
-                        载入
-                      </button>
-                      <button
-                        onClick={() => handleDeletePlan(plan.id)}
-                        className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                      >
-                        删除
-                      </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-bold text-gray-800 dark:text-gray-200">
+                              {plan.title}
+                            </div>
+                            {isActive && (
+                              <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                                当前使用
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {new Date(plan.createdAt).toLocaleDateString()} ·{' '}
+                            {plan.data.length} 个阶段
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleLoadPlan(plan)}
+                            disabled={isActive}
+                            className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                              isActive
+                                ? 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                          >
+                            {isActive ? '已载入' : '载入'}
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlan(plan.id)}
+                            className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Restore Default button at the bottom of saved plans */}
+              <div
+                className={`pt-4 border-t border-gray-100 dark:border-zinc-800 ${!hasCustomPlan ? 'mt-4' : ''}`}
+              >
+                {!hasCustomPlan && (
+                  <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-lg flex items-center gap-2 shadow-sm">
+                    <span className="text-lg">✅</span>
+                    <div className="text-sm font-medium text-green-800 dark:text-green-300">
+                      当前正在使用系统默认计划
                     </div>
                   </div>
-                ))
-              )}
+                )}
+                {hasCustomPlan && (
+                  <button
+                    onClick={handleRestoreDefaultAndClose}
+                    className="w-full py-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    ↩️ 恢复系统默认计划
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <>
@@ -608,7 +666,7 @@ ${codeBlockEnd}
                 <div className="space-y-4">
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900/50">
                     <label className="block text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">
-                      给计划起个名字（可选）
+                      给计划起个名字（可选，默认自动生成）
                     </label>
                     <input
                       value={planTitle}
@@ -617,7 +675,7 @@ ${codeBlockEnd}
                       placeholder="例如: 减脂计划, 周末暴汗"
                     />{' '}
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      * 输入名字将自动保存到“我的计划”中，方便下次直接使用。
+                      * 计划将自动保存到“我的计划”中，方便下次直接使用。
                     </p>
                   </div>
 
@@ -679,7 +737,7 @@ ${codeBlockEnd}
                   onClick={handleJsonSubmit}
                   className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-bold"
                 >
-                  {planTitle.trim() ? '保存并应用' : '应用计划'}
+                  保存并应用
                 </button>
               )}
             </>

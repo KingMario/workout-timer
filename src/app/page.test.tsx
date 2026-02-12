@@ -42,8 +42,10 @@ describe('WorkoutTimer', () => {
     }
   };
 
-  it('renders initial state correctly', () => {
-    render(<WorkoutTimer />);
+  it('renders initial state correctly', async () => {
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     expect(screen.getByText('💪 灵动健身 (FlexWorkout)')).toBeInTheDocument();
     expect(screen.getByText('✨ 定制计划')).toBeInTheDocument();
     expect(screen.getByText('热身阶段')).toBeInTheDocument();
@@ -53,7 +55,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('starts and pauses the timer', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     const toggleButton = screen.getByTitle('开始');
 
     // Start
@@ -79,7 +83,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('handles item transition with ding and speech delay', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
@@ -108,7 +114,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('resets the timer', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
@@ -125,7 +133,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('toggles TTS', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     const ttsBtn = screen.getByTitle('语音播报开关');
 
     await act(async () => {
@@ -140,7 +150,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('allows jumping to a step', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     // Find step 2 in the list. List items have text "2." and "肩部时钟"
     const step2Name = screen
       .getAllByText('肩部时钟')
@@ -169,7 +181,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('adjusts rounds', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
     const selects = screen.getAllByRole('combobox');
 
     await act(async () => {
@@ -180,7 +194,9 @@ describe('WorkoutTimer', () => {
   });
 
   it('completes the workout', async () => {
-    render(<WorkoutTimer />);
+    await act(async () => {
+      render(<WorkoutTimer />);
+    });
 
     const items = screen.getAllByText('腹式深呼吸');
     await act(async () => {
