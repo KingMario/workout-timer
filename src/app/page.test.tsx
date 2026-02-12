@@ -220,6 +220,6 @@ describe('WorkoutTimer', () => {
       vi.advanceTimersByTime(2000);
     });
 
-    expect(screen.getByText(/恭喜完成全部锻炼/)).toBeInTheDocument();
+    expect(screen.getByText(/恭喜完成锻炼/)).toBeInTheDocument();
   });
 });
