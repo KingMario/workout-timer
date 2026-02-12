@@ -313,7 +313,7 @@ export default function WorkoutTimer() {
     }
   }, [currentIdx]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     // Initialize/Resume audio on user gesture
     unlockAudio();
 
@@ -333,7 +333,91 @@ export default function WorkoutTimer() {
         window.speechSynthesis.cancel();
       }
     }
-  };
+  }, [
+    unlockAudio,
+    isRunning,
+    isFinished,
+    handleReset,
+    speak,
+    steps,
+    currentIdx,
+  ]);
+
+  // Keyboard shortcut for Space and Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent triggering shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      if (isTyping) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'Escape') {
+        // Only reset if wizard is NOT open
+        if (!isWizardOpen) {
+          handleReset();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePlay, handleReset, isWizardOpen]);
+
+  // Media Session API for headphone buttons and lock screen
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (!isRunning) {
+          togglePlay();
+        }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isRunning) {
+          togglePlay();
+        }
+      });
+    }
+    return () => {
+      if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+      }
+    };
+  }, [isRunning, togglePlay]);
+
+  // Update Media Session Metadata
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      'mediaSession' in navigator &&
+      steps[currentIdx]
+    ) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: steps[currentIdx].name,
+        artist: '灵动健身 (FlexWorkout)',
+        album: `${steps[currentIdx].section}阶段`,
+        artwork: [
+          { src: '/vercel.svg', sizes: '512x512', type: 'image/svg+xml' },
+        ],
+      });
+    }
+  }, [currentIdx, steps]);
+
+  // Update Media Session Playback State
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isRunning ? 'playing' : 'paused';
+    }
+  }, [isRunning]);
 
   const jumpToStep = (idx: number) => {
     unlockAudio();

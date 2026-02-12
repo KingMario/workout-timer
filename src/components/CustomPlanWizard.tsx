@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { WorkoutPlan } from '../schemas/workout-plan';
@@ -147,11 +147,7 @@ export default function CustomPlanWizard({
     }
   }, [isOpen, reset]);
 
-  if (!isOpen) {
-    return null;
-  }
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (mode === 'create') {
       const hasUnsavedChanges =
         step > 1 || isDirty || jsonInput.length > 0 || planTitle.length > 0;
@@ -162,7 +158,27 @@ export default function CustomPlanWizard({
       }
     }
     onClose();
-  };
+  }, [mode, step, isDirty, jsonInput, planTitle, onClose]);
+
+  // Keyboard shortcut for Escape
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
+  if (!isOpen) {
+    return null;
+  }
 
   const onGeneratePrompt = (data: FormData) => {
     const finalStyle =
