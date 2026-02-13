@@ -43,10 +43,10 @@ describe('WorkoutTimer - Periodic Mode', () => {
       render(<WorkoutTimer />);
     });
 
-    const periodicTab = screen.getByText('间歇提醒');
+    const periodicTab = screen.getByText('间歇拉伸');
     fireEvent.click(periodicTab);
 
-    expect(screen.getByText('⏰ 办公间歇提醒')).toBeInTheDocument();
+    expect(screen.getByText('⏰ 办公间歇拉伸')).toBeInTheDocument();
     expect(screen.getByText('下次提醒倒计时')).toBeInTheDocument();
 
     const startBtn = screen.getByTitle('开启自动提醒');
@@ -56,7 +56,7 @@ describe('WorkoutTimer - Periodic Mode', () => {
     });
 
     expect(mockSpeak).toHaveBeenCalledWith(
-      expect.objectContaining({ text: '间歇提醒已开启。' }),
+      expect.objectContaining({ text: '间歇拉伸已开启。' }),
     );
 
     await finishSpeech();
@@ -75,7 +75,7 @@ describe('WorkoutTimer - Periodic Mode', () => {
       render(<WorkoutTimer />);
     });
 
-    fireEvent.click(screen.getByText('间歇提醒'));
+    fireEvent.click(screen.getByText('间歇拉伸'));
 
     // Use standard 15 min interval
     const select = screen.getByRole('combobox');

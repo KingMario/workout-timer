@@ -489,7 +489,7 @@ export default function WorkoutTimer() {
       if (noSleepRef.current) {
         noSleepRef.current.enable();
       }
-      speak('间歇提醒已开启。');
+      speak('间歇拉伸已开启。');
     } else {
       setIsPeriodicRunning(false);
       setIsBreakActive(false);
@@ -649,7 +649,7 @@ export default function WorkoutTimer() {
               onClick={() => setMode('periodic')}
               className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${mode === 'periodic' ? 'bg-white dark:bg-zinc-800 shadow-sm text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
             >
-              间歇提醒
+              间歇拉伸
             </button>
           </div>
         </div>
@@ -709,7 +709,7 @@ export default function WorkoutTimer() {
         ) : (
           <div className="py-2">
             <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-              ⏰ 办公间歇提醒
+              ⏰ 办公间歇拉伸
             </h1>
 
             {isBreakActive && activeBreakSteps[activeBreakIdx] ? (

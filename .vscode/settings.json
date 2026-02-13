@@ -1,0 +1,8 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^git status --porcelain && git add -A && git commit -m \"chore: 将 间歇提醒 替换为 间歇拉伸\" \\|\\| true && git push origin main$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
+}
