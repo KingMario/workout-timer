@@ -213,24 +213,32 @@ export default function WorkoutTimer() {
     }
   }, []);
 
-  const unlockAudio = useCallback(() => {
+  const unlockAudio = useCallback(async () => {
     if (!audioCtxRef.current) {
       initAudio();
     }
     const ctx = audioCtxRef.current;
     if (ctx) {
-      if (ctx.state === 'suspended') {
-        ctx.resume();
+      try {
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+      } catch {
+        // ignore resume errors
       }
       const buffer = ctx.createBuffer(1, 1, 22050);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
-      source.start(0);
+      try {
+        source.start(0);
+      } catch {
+        // ignore start errors on some mobile browsers
+      }
     }
   }, [initAudio]);
 
-  const playDing = useCallback(() => {
+  const playDing = useCallback(async () => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -243,7 +251,12 @@ export default function WorkoutTimer() {
         return;
       }
       if (ctx.state === 'suspended') {
-        ctx.resume();
+        try {
+          await ctx.resume();
+        } catch {
+          // if resume fails, bail out
+          return;
+        }
       }
       // play ding tone
       const osc = ctx.createOscillator();
@@ -260,10 +273,14 @@ export default function WorkoutTimer() {
       window.setTimeout(() => {
         try {
           osc.disconnect();
-        } catch (e) {}
+        } catch {
+          // ignore
+        }
         try {
           gain.disconnect();
-        } catch (e) {}
+        } catch {
+          // ignore
+        }
       }, 800);
     } catch (e) {
       console.error('Audio play failed', e);
