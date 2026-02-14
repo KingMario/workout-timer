@@ -103,6 +103,8 @@ export default function WorkoutTimer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const periodicTimerRef = useRef<NodeJS.Timeout | null>(null);
   const breakStepTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const speakTimeoutRef = useRef<number | null>(null);
+  const dingTimeoutRef = useRef<number | null>(null);
   const planListRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -138,6 +140,14 @@ export default function WorkoutTimer() {
     }
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
+    }
+    if (speakTimeoutRef.current) {
+      clearTimeout(speakTimeoutRef.current);
+      speakTimeoutRef.current = null;
+    }
+    if (dingTimeoutRef.current) {
+      clearTimeout(dingTimeoutRef.current);
+      dingTimeoutRef.current = null;
     }
   }, []);
 
@@ -235,6 +245,7 @@ export default function WorkoutTimer() {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
+      // play ding tone
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -245,6 +256,15 @@ export default function WorkoutTimer() {
       gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
+      // schedule disconnect to avoid accumulating nodes
+      window.setTimeout(() => {
+        try {
+          osc.disconnect();
+        } catch (e) {}
+        try {
+          gain.disconnect();
+        } catch (e) {}
+      }, 800);
     } catch (e) {
       console.error('Audio play failed', e);
     }
@@ -262,7 +282,14 @@ export default function WorkoutTimer() {
         }
         return;
       }
-      window.speechSynthesis.cancel();
+      // Cancel previous utterances and clear pending speak timers
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (speakTimeoutRef.current) {
+        clearTimeout(speakTimeoutRef.current);
+        speakTimeoutRef.current = null;
+      }
       setIsSpeaking(true);
       const msg = new SpeechSynthesisUtterance(text);
       msg.lang = 'zh-CN';
@@ -285,8 +312,16 @@ export default function WorkoutTimer() {
   );
 
   const playDoubleDing = useCallback(() => {
+    // clear any pending ding
+    if (dingTimeoutRef.current) {
+      clearTimeout(dingTimeoutRef.current);
+      dingTimeoutRef.current = null;
+    }
     playDing();
-    setTimeout(playDing, 300);
+    dingTimeoutRef.current = window.setTimeout(() => {
+      playDing();
+      dingTimeoutRef.current = null;
+    }, 300);
   }, [playDing]);
 
   const handleNextStep = useCallback(() => {
@@ -298,12 +333,22 @@ export default function WorkoutTimer() {
         setIsSpeaking(true);
         playDoubleDing();
         if (ttsEnabled) {
-          setTimeout(() => {
+          if (speakTimeoutRef.current) {
+            clearTimeout(speakTimeoutRef.current);
+            speakTimeoutRef.current = null;
+          }
+          speakTimeoutRef.current = window.setTimeout(() => {
             speak(`${steps[nextIdx].name}。${steps[nextIdx].desc}`);
+            speakTimeoutRef.current = null;
           }, 1000);
         } else {
-          setTimeout(() => {
+          if (speakTimeoutRef.current) {
+            clearTimeout(speakTimeoutRef.current);
+            speakTimeoutRef.current = null;
+          }
+          speakTimeoutRef.current = window.setTimeout(() => {
             setIsSpeaking(false);
+            speakTimeoutRef.current = null;
           }, 1000);
         }
       }
@@ -357,6 +402,16 @@ export default function WorkoutTimer() {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+      // ensure speaking state and pending timers cleared
+      setIsSpeaking(false);
+      if (speakTimeoutRef.current) {
+        clearTimeout(speakTimeoutRef.current);
+        speakTimeoutRef.current = null;
+      }
+      if (dingTimeoutRef.current) {
+        clearTimeout(dingTimeoutRef.current);
+        dingTimeoutRef.current = null;
+      }
     }
   }, [
     unlockAudio,
@@ -374,10 +429,15 @@ export default function WorkoutTimer() {
       setActiveBreakIdx(nextIdx);
       setBreakStepTimeLeft(30);
       playDoubleDing();
-      setTimeout(() => {
+      if (speakTimeoutRef.current) {
+        clearTimeout(speakTimeoutRef.current);
+        speakTimeoutRef.current = null;
+      }
+      speakTimeoutRef.current = window.setTimeout(() => {
         speak(
           `${activeBreakSteps[nextIdx].name}。${activeBreakSteps[nextIdx].desc}`,
         );
+        speakTimeoutRef.current = null;
       }, 1000);
     } else {
       // Finished all 3
@@ -411,6 +471,11 @@ export default function WorkoutTimer() {
       return [...next, ...toSuggest];
     });
 
+    // speak immediately for periodic trigger
+    if (speakTimeoutRef.current) {
+      clearTimeout(speakTimeoutRef.current);
+      speakTimeoutRef.current = null;
+    }
     speak(
       `休息时间到了。第一个动作：${toSuggest[0].name}。${toSuggest[0].desc}`,
     );
@@ -496,6 +561,15 @@ export default function WorkoutTimer() {
       setActiveBreakSteps([]);
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
+      }
+      setIsSpeaking(false);
+      if (speakTimeoutRef.current) {
+        clearTimeout(speakTimeoutRef.current);
+        speakTimeoutRef.current = null;
+      }
+      if (dingTimeoutRef.current) {
+        clearTimeout(dingTimeoutRef.current);
+        dingTimeoutRef.current = null;
       }
     }
   }, [unlockAudio, isPeriodicRunning, speak]);
