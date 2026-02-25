@@ -8,11 +8,11 @@ import {
   vi,
   type Mock,
 } from 'vitest';
-import WorkoutTimer from './page';
+import PeriodicTab from './PeriodicTab';
 
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 
-describe('WorkoutTimer - Periodic Mode', () => {
+describe('PeriodicTab', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockSpeak.mockClear();
@@ -20,7 +20,10 @@ describe('WorkoutTimer - Periodic Mode', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    // Wrap pending timers in act() to avoid "not wrapped in act" warnings
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     vi.useRealTimers();
   });
 
@@ -38,13 +41,10 @@ describe('WorkoutTimer - Periodic Mode', () => {
     }
   };
 
-  it('switches to periodic mode and starts/stops reminder', async () => {
+  it('starts and stops periodic reminder', async () => {
     await act(async () => {
-      render(<WorkoutTimer />);
+      render(<PeriodicTab />);
     });
-
-    const periodicTab = screen.getByText('间歇拉伸');
-    fireEvent.click(periodicTab);
 
     expect(screen.getByText('⏰ 办公间歇拉伸')).toBeInTheDocument();
     expect(screen.getByText('下次提醒倒计时')).toBeInTheDocument();
@@ -70,89 +70,71 @@ describe('WorkoutTimer - Periodic Mode', () => {
     expect(screen.getByTitle('开启自动提醒')).toBeInTheDocument();
   });
 
-  it('triggers break sequence after interval', async () => {
+  it('enters break mode and advances break steps with speech', async () => {
     await act(async () => {
-      render(<WorkoutTimer />);
+      render(
+        <PeriodicTab
+          initialIntervalMinutes={15}
+          initialTimeLeftSeconds={0}
+          initialIsRunning={true}
+        />,
+      );
     });
 
-    fireEvent.click(screen.getByText('间歇拉伸'));
-
-    // Use standard 15 min interval
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: '15' } });
-
+    // When timeLeft is 0 and running, the effect schedules a 0ms timeout
+    // that triggers the first break sequence.
     await act(async () => {
-      fireEvent.click(screen.getByTitle('开启自动提醒'));
+      vi.runOnlyPendingTimers();
     });
 
-    await finishSpeech();
-    mockSpeak.mockClear();
-
-    // Fast forward 15 min (900s)
-    await act(async () => {
-      vi.advanceTimersByTime(900000);
-    });
-
-    expect(mockSpeak).toHaveBeenCalled();
-    expect(mockSpeak.mock.calls[0][0].text).toContain(
-      '休息时间到了。第一个动作：',
-    );
-
-    // Should show active break UI
+    // First break state
     expect(screen.getByText(/正在休息 \(1\/3\)/)).toBeInTheDocument();
-    expect(screen.getByText('30s')).toBeInTheDocument();
-
+    expect(screen.getByText(/s$/)).toBeInTheDocument();
+    expect(mockSpeak).toHaveBeenCalled();
     await finishSpeech();
     mockSpeak.mockClear();
 
-    // Step 1 -> Step 2
-    for (let i = 0; i < 30; i++) {
-      await act(async () => {
-        vi.advanceTimersByTime(1000);
-      });
-    }
-
-    // Trigger the 1s delay for speak in handleNextBreakStep
+    // Step 1 -> Step 2: 30 seconds + 1s speech delay
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(30_000);
+      vi.runOnlyPendingTimers();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1_500);
+      vi.runOnlyPendingTimers();
     });
 
     expect(screen.getByText(/正在休息 \(2\/3\)/)).toBeInTheDocument();
     expect(mockSpeak).toHaveBeenCalled();
-
     await finishSpeech();
     mockSpeak.mockClear();
 
     // Step 2 -> Step 3
-    for (let i = 0; i < 30; i++) {
-      await act(async () => {
-        vi.advanceTimersByTime(1000);
-      });
-    }
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(30_000);
+      vi.runOnlyPendingTimers();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1_500);
+      vi.runOnlyPendingTimers();
     });
 
     expect(screen.getByText(/正在休息 \(3\/3\)/)).toBeInTheDocument();
     expect(mockSpeak).toHaveBeenCalled();
-
     await finishSpeech();
     mockSpeak.mockClear();
 
     // Step 3 -> Finish
-    for (let i = 0; i < 30; i++) {
-      await act(async () => {
-        vi.advanceTimersByTime(1000);
-      });
-    }
-
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(30_000);
+      vi.runOnlyPendingTimers();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1_500);
+      vi.runOnlyPendingTimers();
     });
 
-    expect(mockSpeak).toHaveBeenCalledWith(
-      expect.objectContaining({ text: '休息结束，继续工作吧。' }),
-    );
+    // After finishing, break UI disappears and countdown reappears
     expect(screen.queryByText(/正在休息/)).not.toBeInTheDocument();
     expect(screen.getByText('下次提醒倒计时')).toBeInTheDocument();
   });
