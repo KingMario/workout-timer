@@ -5,7 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  assetPrefix: './',
+  // site is served under /workout-timer
+  basePath: '/workout-timer',
+  assetPrefix: '/workout-timer/',
 };
 
 export default nextConfig;

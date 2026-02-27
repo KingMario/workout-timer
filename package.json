@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:export": "next build && cp out/index.html ../timer.html && rm -rf ../_next && cp -r out/_next ../",
+    "generate-sitemap": "node scripts/generate-sitemap.js",
+    "build:export": "node scripts/generate-sitemap.js && next build && cp out/index.html ../timer.html && rm -rf ../_next && cp -r out/_next ../",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
