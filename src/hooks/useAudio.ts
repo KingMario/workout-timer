@@ -117,6 +117,7 @@ export function useAudio(ttsEnabled = true) {
         typeof window === 'undefined' ||
         !window.speechSynthesis
       ) {
+        setIsSpeaking(false);
         if (onEnd) {
           onEnd();
         }
