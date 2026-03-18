@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CustomPlanWizard from './CustomPlanWizard';
 
@@ -36,7 +36,13 @@ describe('CustomPlanWizard', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders step 1 when open', () => {
+  const enterCreateFlow = async () => {
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ 新建计划'));
+    });
+  };
+
+  it('shows plan library by default when open', () => {
     render(
       <CustomPlanWizard
         isOpen={true}
@@ -44,8 +50,10 @@ describe('CustomPlanWizard', () => {
         onPlanLoaded={onPlanLoaded}
       />,
     );
-    expect(screen.getByText('1. 定制需求')).toBeInTheDocument();
-    expect(screen.getByLabelText('时长 (分钟)')).toBeInTheDocument();
+    expect(screen.getByText('📚 计划库')).toBeInTheDocument();
+    expect(screen.getByText('📋 系统内置计划')).toBeInTheDocument();
+    expect(screen.getByText('+ 新建计划')).toBeInTheDocument();
+    expect(screen.getByText('系统默认计划')).toBeInTheDocument();
   });
 
   it('navigates through steps and generates prompt', async () => {
@@ -56,6 +64,7 @@ describe('CustomPlanWizard', () => {
         onPlanLoaded={onPlanLoaded}
       />,
     );
+    await enterCreateFlow();
 
     // Step 1: Fill form
     fireEvent.input(screen.getByLabelText('时长 (分钟)'), {
@@ -93,6 +102,7 @@ describe('CustomPlanWizard', () => {
         onPlanLoaded={onPlanLoaded}
       />,
     );
+    await enterCreateFlow();
 
     // Skip to Step 3 directly via state manipulation isn't easy in integration test,
     // so go through steps
@@ -126,6 +136,42 @@ describe('CustomPlanWizard', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('disables save until json is provided', async () => {
+    render(
+      <CustomPlanWizard
+        isOpen={true}
+        onClose={onClose}
+        onPlanLoaded={onPlanLoaded}
+      />,
+    );
+    await enterCreateFlow();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('生成提示词'));
+    });
+    fireEvent.click(screen.getByText('我已获得 JSON，下一步'));
+
+    const validPlan = [
+      {
+        name: 'Test Phase',
+        tips: 'Testing',
+        allowRounds: false,
+        defaultRounds: 1,
+        maxRounds: 1,
+        steps: [{ name: 'Step 1', desc: 'Do it', duration: 10 }],
+      },
+    ];
+
+    const saveButton = screen.getByText('保存并应用');
+    expect(saveButton).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText(/\[\{"name": "热身"/), {
+      target: { value: JSON.stringify(validPlan) },
+    });
+
+    expect(saveButton).toBeEnabled();
+  });
+
   it('prompts confirmation on unsaved changes when closing', async () => {
     render(
       <CustomPlanWizard
@@ -134,6 +180,7 @@ describe('CustomPlanWizard', () => {
         onPlanLoaded={onPlanLoaded}
       />,
     );
+    await enterCreateFlow();
 
     // Modify a field
     fireEvent.input(screen.getByLabelText('时长 (分钟)'), {
@@ -156,6 +203,7 @@ describe('CustomPlanWizard', () => {
         onPlanLoaded={onPlanLoaded}
       />,
     );
+    await enterCreateFlow();
 
     // Go to Step 3
     await act(async () => {
@@ -224,13 +272,15 @@ describe('CustomPlanWizard', () => {
       />,
     );
 
-    // Switch to saved plans
-    fireEvent.click(screen.getByText('查看已存计划'));
-
     expect(screen.getByText('Old Plan')).toBeInTheDocument();
 
     // Load plan
-    fireEvent.click(screen.getByText('载入'));
+    const savedPlanCard = screen
+      .getByText('Old Plan')
+      .closest('div[class*="justify-between"]');
+    expect(savedPlanCard).not.toBeNull();
+    const loadButton = within(savedPlanCard!).getByText('载入');
+    fireEvent.click(loadButton);
     expect(onPlanLoaded).toHaveBeenCalledWith(planData, '123');
     expect(onClose).toHaveBeenCalled();
   });

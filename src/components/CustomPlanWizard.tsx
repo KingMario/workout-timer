@@ -9,6 +9,7 @@ import {
   WorkoutPlanSchema,
   getJsonSchemaString,
 } from '../schemas/workout-plan';
+import { BUILT_IN_PLANS } from '../schemas';
 import {
   deletePlan,
   getSavedPlans,
@@ -80,12 +81,19 @@ const FormDataSchema = z.object({
 
 type FormData = z.infer<typeof FormDataSchema>;
 
+const DEFAULT_FORM_VALUES: FormData = {
+  duration: '20',
+  gender: 'Private',
+  level: 'Beginner',
+  goal: 'Fat loss',
+  frequency: 'Every weekday',
+  style: 'Calm & Mobility-focused',
+};
+
 interface CustomPlanWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onPlanLoaded: (plan: WorkoutPlan, id?: string) => void;
-  onRestoreDefault?: () => void; // New prop for restoring default
-  hasCustomPlan?: boolean; // New prop to show/hide restore button
   activePlanId?: string; // New prop for current active plan
 }
 
@@ -93,11 +101,9 @@ export default function CustomPlanWizard({
   isOpen,
   onClose,
   onPlanLoaded,
-  onRestoreDefault,
-  hasCustomPlan,
   activePlanId,
 }: CustomPlanWizardProps) {
-  const [mode, setMode] = useState<'create' | 'saved'>('create'); // 'create' or 'saved'
+  const [mode, setMode] = useState<'create' | 'saved'>('saved'); // 'create' or 'saved'
   const [step, setStep] = useState(1);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [jsonInput, setJsonInput] = useState('');
@@ -113,14 +119,7 @@ export default function CustomPlanWizard({
     reset,
   } = useForm<FormData>({
     resolver: zodResolver(FormDataSchema),
-    defaultValues: {
-      duration: '20',
-      gender: 'Private',
-      level: 'Beginner',
-      goal: 'Fat loss',
-      frequency: 'Every weekday',
-      style: 'Calm & Mobility-focused',
-    },
+    defaultValues: DEFAULT_FORM_VALUES,
   });
 
   const selectedStyle = watch('style');
@@ -129,33 +128,41 @@ export default function CustomPlanWizard({
     if (isOpen) {
       setSavedPlans(getSavedPlans());
       setStep(1);
-      setMode('create');
+      setMode('saved');
       setPlanTitle('');
       setJsonInput('');
+      setGeneratedPrompt('');
       setError(null);
-      // We don't reset form here to allow persistence if user accidentally closed?
-      // Actually previous behavior was reset on open via useEffect in previous steps.
-      // But let's reset to defaults to be clean.
-      reset({
-        duration: '20',
-        gender: 'Private',
-        level: 'Beginner',
-        goal: 'Fat loss',
-        frequency: 'Every weekday',
-        style: 'Calm & Mobility-focused',
-      });
+      reset(DEFAULT_FORM_VALUES);
     }
   }, [isOpen, reset]);
 
+  const enterCreateMode = useCallback(() => {
+    setStep(1);
+    setMode('create');
+    setPlanTitle('');
+    setJsonInput('');
+    setGeneratedPrompt('');
+    setError(null);
+    reset(DEFAULT_FORM_VALUES);
+  }, [reset]);
+
+  const showSavedView = useCallback(() => {
+    setMode('saved');
+    setStep(1);
+    setPlanTitle('');
+    setJsonInput('');
+    setGeneratedPrompt('');
+    setError(null);
+  }, []);
+
   const handleClose = useCallback(() => {
-    if (mode === 'create') {
-      const hasUnsavedChanges =
-        step > 1 || isDirty || jsonInput.length > 0 || planTitle.length > 0;
-      if (hasUnsavedChanges) {
-        if (!confirm('您有未保存的更改，确定要关闭吗？')) {
-          return;
-        }
-      }
+    if (
+      mode === 'create' &&
+      (step > 1 || isDirty || jsonInput.length > 0 || planTitle.length > 0) &&
+      !confirm('您有未保存的更改，确定要关闭吗？')
+    ) {
+      return;
     }
     onClose();
   }, [mode, step, isDirty, jsonInput, planTitle, onClose]);
@@ -217,6 +224,8 @@ ${codeBlockEnd}
     alert('提示词已复制！请前往 DeepSeek 或其他 AI 工具粘贴。');
   };
 
+  const isJsonEmpty = jsonInput.trim().length === 0;
+
   const handleJsonSubmit = () => {
     setError(null);
     try {
@@ -265,13 +274,6 @@ ${codeBlockEnd}
     onClose();
   };
 
-  const handleRestoreDefaultAndClose = () => {
-    if (onRestoreDefault) {
-      onRestoreDefault();
-      onClose();
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col transition-all">
@@ -279,7 +281,7 @@ ${codeBlockEnd}
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             {mode === 'saved' ? (
-              '📚 我的计划'
+              '📚 计划库'
             ) : (
               <>
                 {step === 1 && '1. 定制需求'}
@@ -291,15 +293,15 @@ ${codeBlockEnd}
           <div className="flex items-center gap-2">
             {mode === 'create' && (
               <button
-                onClick={() => setMode('saved')}
+                onClick={showSavedView}
                 className="text-sm px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
               >
-                查看已存计划
+                计划库
               </button>
             )}
             {mode === 'saved' && (
               <button
-                onClick={() => setMode('create')}
+                onClick={enterCreateMode}
                 className="text-sm px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               >
                 + 新建计划
@@ -328,86 +330,124 @@ ${codeBlockEnd}
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
           {mode === 'saved' ? (
-            <div className="space-y-3">
-              {savedPlans.length === 0 ? (
-                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                  暂无保存的计划，快去创建一个吧！
-                </div>
-              ) : (
-                <>
-                  {savedPlans.map((plan) => {
-                    const isActive = plan.id === activePlanId;
-                    return (
-                      <div
-                        key={plan.id}
-                        className={`flex justify-between items-center p-4 rounded-lg border transition-all ${
-                          isActive
-                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-900/50 shadow-sm'
-                            : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-900'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="font-bold text-gray-800 dark:text-gray-200">
-                              {plan.title}
-                            </div>
-                            {isActive && (
-                              <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                                当前使用
-                              </span>
-                            )}
+            <div className="space-y-6">
+              {/* Built-in Plans */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+                  📋 系统内置计划
+                </h3>
+                {BUILT_IN_PLANS.map((plan) => {
+                  const isActive =
+                    (!activePlanId && plan.id === 'default-workout') ||
+                    activePlanId === plan.id;
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`flex justify-between items-center p-4 rounded-lg border transition-all ${
+                        isActive
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-800 ring-1 ring-green-200 dark:ring-green-900/50 shadow-sm'
+                          : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-900'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="font-bold text-gray-800 dark:text-gray-200">
+                            {plan.title}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {new Date(plan.createdAt).toLocaleDateString()} ·{' '}
-                            {plan.data.length} 个阶段
-                          </div>
+                          {isActive && (
+                            <span className="text-[10px] bg-green-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                              当前使用
+                            </span>
+                          )}
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleLoadPlan(plan)}
-                            disabled={isActive}
-                            className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                              isActive
-                                ? 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                          >
-                            {isActive ? '已载入' : '载入'}
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlan(plan.id)}
-                            className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                          >
-                            删除
-                          </button>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {plan.description}
                         </div>
                       </div>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Restore Default button at the bottom of saved plans */}
-              <div
-                className={`pt-4 border-t border-gray-100 dark:border-zinc-800 ${!hasCustomPlan ? 'mt-4' : ''}`}
-              >
-                {!hasCustomPlan && (
-                  <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-lg flex items-center gap-2 shadow-sm">
-                    <span className="text-lg">✅</span>
-                    <div className="text-sm font-medium text-green-800 dark:text-green-300">
-                      当前正在使用系统默认计划
+                      <div className="ml-4">
+                        <button
+                          onClick={() => {
+                            onPlanLoaded(plan.data, plan.id);
+                            onClose();
+                          }}
+                          disabled={isActive}
+                          className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${
+                            isActive
+                              ? 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {isActive ? '已载入' : '载入'}
+                        </button>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Saved Plans */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+                  💾 我的收藏
+                </h3>
+                {savedPlans.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm italic">
+                    暂无收藏的计划
                   </div>
-                )}
-                {hasCustomPlan && (
-                  <button
-                    onClick={handleRestoreDefaultAndClose}
-                    className="w-full py-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    ↩️ 恢复系统默认计划
-                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    {savedPlans.map((plan) => {
+                      const isActive = plan.id === activePlanId;
+                      return (
+                        <div
+                          key={plan.id}
+                          className={`flex justify-between items-center p-4 rounded-lg border transition-all ${
+                            isActive
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 ring-1 ring-blue-200 dark:ring-blue-900/50 shadow-sm'
+                              : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-900'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="font-bold text-gray-800 dark:text-gray-200">
+                                {plan.title}
+                              </div>
+                              {isActive && (
+                                <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                                  当前使用
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {new Date(plan.createdAt).toLocaleDateString()} ·{' '}
+                              {plan.data.length} 个阶段
+                            </div>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={() => handleLoadPlan(plan)}
+                              disabled={isActive}
+                              className={`px-3 py-1.5 text-sm rounded transition-colors font-medium ${
+                                isActive
+                                  ? 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              {isActive ? '已载入' : '载入'}
+                            </button>
+                            <button
+                              onClick={() => handleDeletePlan(plan.id)}
+                              className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                            >
+                              删除
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -751,7 +791,12 @@ ${codeBlockEnd}
               {step === 3 && (
                 <button
                   onClick={handleJsonSubmit}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-bold"
+                  disabled={isJsonEmpty}
+                  className={`px-6 py-2 rounded-lg transition-colors font-bold ${
+                    isJsonEmpty
+                      ? 'bg-green-600/40 text-white cursor-not-allowed opacity-60'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                 >
                   保存并应用
                 </button>

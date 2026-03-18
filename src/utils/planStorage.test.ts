@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { BUILT_IN_PLANS } from '../schemas';
 import type { WorkoutPlan } from '../schemas/workout-plan';
 import {
   clearActivePlan,
@@ -129,6 +130,43 @@ describe('planStorage utils', () => {
 
     const active = getActivePlan();
     expect(active).toBeNull();
+  });
+
+  it('getActivePlan returns built-in plan when active id matches built-in plan', () => {
+    const builtInPlan = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'seated-workout',
+    );
+    expect(builtInPlan).toBeDefined();
+    if (!builtInPlan) {
+      return;
+    }
+
+    saveActivePlan(builtInPlan.data, builtInPlan.id);
+    const active = getActivePlan();
+
+    expect(active).not.toBeNull();
+    expect(active?.plan).toEqual(builtInPlan.data);
+    expect(active?.id).toBe(builtInPlan.id);
+  });
+
+  it('getActivePlan resolves built-in plan when only id stored', () => {
+    const builtInPlan = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'seated-workout',
+    );
+    expect(builtInPlan).toBeDefined();
+    if (!builtInPlan) {
+      return;
+    }
+
+    localStorage.setItem(
+      'mario_workout_timer_active_plan',
+      JSON.stringify({ id: builtInPlan.id }),
+    );
+
+    const active = getActivePlan();
+    expect(active).not.toBeNull();
+    expect(active?.plan).toEqual(builtInPlan.data);
+    expect(active?.id).toBe(builtInPlan.id);
   });
 
   it('clearActivePlan removes active plan from storage', () => {

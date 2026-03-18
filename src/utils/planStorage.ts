@@ -1,3 +1,4 @@
+import { BUILT_IN_PLANS } from '../schemas';
 import type { WorkoutPlan } from '../schemas/workout-plan';
 
 export interface SavedPlan {
@@ -77,11 +78,21 @@ export const getActivePlan = (): {
     if (parsed.id) {
       const allPlans = getSavedPlans();
       const found = allPlans.find((p) => p.id === parsed.id);
-      if (!found) {
-        // Plan was deleted, return null to trigger fallback
-        return null;
+      if (found) {
+        return { plan: found.data, id: found.id };
       }
-      return { plan: found.data, id: found.id };
+
+      const builtIn = BUILT_IN_PLANS.find((plan) => plan.id === parsed.id);
+      if (builtIn) {
+        return { plan: builtIn.data, id: builtIn.id };
+      }
+
+      if (parsed.plan && Array.isArray(parsed.plan)) {
+        return { plan: parsed.plan, id: parsed.id };
+      }
+
+      // Plan was deleted or unknown, return null to trigger fallback
+      return null;
     }
 
     return { plan: parsed.plan || parsed };

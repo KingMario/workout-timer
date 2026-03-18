@@ -10,11 +10,7 @@ import React, {
 import useAudio from '../hooks/useAudio';
 import { DEFAULT_PLAN } from '../schemas/default-plan';
 import type { WorkoutPlan } from '../schemas/workout-plan';
-import {
-  clearActivePlan,
-  getActivePlan,
-  saveActivePlan,
-} from '../utils/planStorage';
+import { getActivePlan, saveActivePlan } from '../utils/planStorage';
 import CustomPlanWizard from './CustomPlanWizard';
 
 interface Step {
@@ -248,7 +244,7 @@ export default function WorkoutTab() {
               onClick={() => setIsWizardOpen(true)}
               className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
             >
-              ✨ 定制计划
+              ✨ 计划库
             </button>
           </div>
         </div>
@@ -441,13 +437,6 @@ export default function WorkoutTab() {
           setPlanSections(plan);
           saveActivePlan(plan, id);
         }}
-        onRestoreDefault={() => {
-          if (confirm('确定要恢复默认计划吗？')) {
-            setPlanSections(DEFAULT_PLAN);
-            clearActivePlan();
-          }
-        }}
-        hasCustomPlan={!!getActivePlan()}
         activePlanId={getActivePlan()?.id}
       />
     </div>

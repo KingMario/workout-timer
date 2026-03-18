@@ -51,7 +51,7 @@ describe('WorkoutTab', () => {
       render(<WorkoutTab />);
     });
     expect(screen.getByText('💪 灵动健身 (FlexWorkout)')).toBeInTheDocument();
-    expect(screen.getByText('✨ 定制计划')).toBeInTheDocument();
+    expect(screen.getByText('✨ 计划库')).toBeInTheDocument();
     expect(screen.getByText('热身阶段')).toBeInTheDocument();
     // It appears in header and list, so getAll
     expect(screen.getAllByText('颈部画圆').length).toBeGreaterThan(0);
