@@ -8,3 +8,109 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.legal-notice-banner {
+  position: relative;
+  z-index: 61;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #7c2d12;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.legal-notice-banner p {
+  margin: 0;
+  flex: 1;
+}
+
+.legal-notice-link {
+  margin: 0 4px;
+  color: #9a3412;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal-notice-link:hover {
+  opacity: 0.85;
+}
+
+.legal-notice-dismiss {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #9a3412;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legal-notice-dismiss:hover {
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .legal-notice-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .legal-notice-dismiss {
+    width: 100%;
+  }
+}
+
+.disclaimer-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.disclaimer-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px 16px;
+}
+
+.disclaimer-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+}
+
+.disclaimer-updated {
+  margin: 0 0 16px;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.disclaimer-card h2 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.disclaimer-card p {
+  margin: 0 0 10px;
+  line-height: 1.7;
+}
+
+.disclaimer-actions {
+  margin-top: 20px;
+}
+
+.disclaimer-back-link {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}

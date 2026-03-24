@@ -1,11 +1,33 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState } from 'react';
 import PeriodicTab from '../components/PeriodicTab';
 import WorkoutTab from '../components/WorkoutTab';
 
+const DISCLAIMER_AGREED_KEY = 'disclaimerAgreed';
+const DISCLAIMER_AGREED_AT_KEY = 'disclaimerAgreedAt';
+
 export default function WorkoutTimer() {
   const [mode, setMode] = useState<'workout' | 'periodic'>('workout');
+  const [showDisclaimerNotice, setShowDisclaimerNotice] = useState(() => {
+    try {
+      return localStorage.getItem(DISCLAIMER_AGREED_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleAcceptDisclaimer = () => {
+    try {
+      localStorage.setItem(DISCLAIMER_AGREED_KEY, 'true');
+      localStorage.setItem(DISCLAIMER_AGREED_AT_KEY, String(Date.now()));
+    } catch {
+      // Ignore storage failures and still hide the banner for the current session.
+    }
+
+    setShowDisclaimerNotice(false);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
@@ -28,7 +50,7 @@ export default function WorkoutTimer() {
       </a>
 
       {/* Header - tabs */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-5 py-4 border-b border-gray-100 dark:border-zinc-800 shadow-sm">
+      <div className="sticky top-0 z-[60] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 border-b border-gray-100 dark:border-zinc-800 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <div className="flex bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg">
             <button
@@ -47,6 +69,29 @@ export default function WorkoutTimer() {
 
           <div />
         </div>
+
+        {showDisclaimerNotice ? (
+          <div
+            className="legal-notice-banner"
+            role="note"
+            aria-label="免责声明提示"
+          >
+            <p>
+              继续使用本应用，即表示你已阅读并同意
+              <Link href="/disclaimer" className="legal-notice-link">
+                《免责声明与使用条款》
+              </Link>
+              。
+            </p>
+            <button
+              type="button"
+              className="legal-notice-dismiss"
+              onClick={handleAcceptDisclaimer}
+            >
+              同意并关闭
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Content */}
