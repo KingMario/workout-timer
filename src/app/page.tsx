@@ -10,13 +10,17 @@ const DISCLAIMER_AGREED_AT_KEY = 'disclaimerAgreedAt';
 
 export default function WorkoutTimer() {
   const [mode, setMode] = useState<'workout' | 'periodic'>('workout');
-  const [showDisclaimerNotice, setShowDisclaimerNotice] = useState(() => {
+  const [showDisclaimerNotice, setShowDisclaimerNotice] = useState(false);
+
+  // Use useEffect to handle logic that depends on window/localStorage to avoid hydration mismatch
+  React.useEffect(() => {
     try {
-      return localStorage.getItem(DISCLAIMER_AGREED_KEY) !== 'true';
+      const agreed = localStorage.getItem(DISCLAIMER_AGREED_KEY) === 'true';
+      setShowDisclaimerNotice(!agreed);
     } catch {
-      return true;
+      setShowDisclaimerNotice(true);
     }
-  });
+  }, []);
 
   const handleAcceptDisclaimer = () => {
     try {
@@ -30,7 +34,7 @@ export default function WorkoutTimer() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
+    <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 font-sans transition-colors duration-300">
       <a
         href="https://github.com/KingMario/workout-timer"
         target="_blank"

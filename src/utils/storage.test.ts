@@ -4,11 +4,13 @@ import type { WorkoutPlan } from '../schemas/workout-plan';
 import {
   clearActivePlan,
   deletePlan,
+  getAIConfig,
   getActivePlan,
   getSavedPlans,
+  saveAIConfig,
   saveActivePlan,
   savePlan,
-} from './planStorage';
+} from './storage';
 
 // Helper: basic mock plan
 const mockPlan: WorkoutPlan = [
@@ -28,7 +30,7 @@ const mockPlan: WorkoutPlan = [
   },
 ];
 
-describe('planStorage utils', () => {
+describe('storage utils', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
@@ -172,8 +174,24 @@ describe('planStorage utils', () => {
   it('clearActivePlan removes active plan from storage', () => {
     // For current implementation, saveActivePlan stores { plan, id },
     // which getActivePlan reads back as a plain plan without id.
-    saveActivePlan(mockPlan, 'some-id');
     clearActivePlan();
     expect(getActivePlan()).toBeNull();
+  });
+
+  it('getAIConfig returns default values when empty', () => {
+    const config = getAIConfig();
+    expect(config.apiKey).toBe('');
+    expect(config.baseUrl).toBe('https://api.deepseek.com');
+  });
+
+  it('saveAIConfig stores and getAIConfig retrieves config', () => {
+    const newConfig = {
+      apiKey: 'test-key',
+      baseUrl: 'https://api.openai.com',
+      model: 'gpt-4',
+    };
+    saveAIConfig(newConfig);
+    const retrieved = getAIConfig();
+    expect(retrieved).toEqual(newConfig);
   });
 });

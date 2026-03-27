@@ -10,7 +10,7 @@ import React, {
 import useAudio from '../hooks/useAudio';
 import { DEFAULT_PLAN } from '../schemas/default-plan';
 import type { WorkoutPlan } from '../schemas/workout-plan';
-import { getActivePlan, saveActivePlan } from '../utils/planStorage';
+import { getActivePlan, saveActivePlan } from '../utils/storage';
 import CustomPlanWizard from './CustomPlanWizard';
 
 interface Step {
@@ -117,7 +117,7 @@ export default function WorkoutTab() {
       setTimeLeft(stepsRef.current[0].duration);
     }
     cancelAll();
-  }, []);
+  }, [cancelAll]);
 
   const handleNextStep = useCallback(() => {
     if (currentIdx < steps.length - 1) {
@@ -138,7 +138,15 @@ export default function WorkoutTab() {
       setIsFinished(true);
       disableNoSleep();
     }
-  }, [currentIdx, steps, isRunning, speak, playDoubleDing, ttsEnabled]);
+  }, [
+    currentIdx,
+    steps,
+    isRunning,
+    playDoubleDing,
+    ttsEnabled,
+    scheduleSpeak,
+    disableNoSleep,
+  ]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0 && !isSpeaking) {
@@ -161,7 +169,6 @@ export default function WorkoutTab() {
       currentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentIdx]);
-
   const togglePlay = useCallback(() => {
     unlockAudio();
     if (!isRunning) {
@@ -185,6 +192,8 @@ export default function WorkoutTab() {
     speak,
     steps,
     currentIdx,
+    enableNoSleep,
+    cancelAll,
   ]);
 
   useEffect(() => {
@@ -299,6 +308,7 @@ export default function WorkoutTab() {
                     </div>
                     {section?.allowRounds && (
                       <select
+                        aria-label="section rounds"
                         disabled={isRunning}
                         value={
                           sectionRounds[step.section] || section.defaultRounds
@@ -430,15 +440,16 @@ export default function WorkoutTab() {
         </div>
       </div>
 
-      <CustomPlanWizard
-        isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
-        onPlanLoaded={(plan: WorkoutPlan, id?: string) => {
-          setPlanSections(plan);
-          saveActivePlan(plan, id);
-        }}
-        activePlanId={getActivePlan()?.id}
-      />
+      {isWizardOpen && (
+        <CustomPlanWizard
+          onClose={() => setIsWizardOpen(false)}
+          onPlanLoaded={(plan: WorkoutPlan, id?: string) => {
+            setPlanSections(plan);
+            saveActivePlan(plan, id);
+          }}
+          activePlanId={getActivePlan()?.id}
+        />
+      )}
     </div>
   );
 }

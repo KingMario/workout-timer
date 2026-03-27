@@ -10,6 +10,44 @@ export interface SavedPlan {
 
 const STORAGE_KEY = 'mario_workout_timer_plans';
 const ACTIVE_PLAN_KEY = 'mario_workout_timer_active_plan';
+const AI_CONFIG_KEY = 'mario_workout_timer_ai_config';
+
+export interface AIConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+export const getAIConfig = (): AIConfig => {
+  if (typeof window === 'undefined') {
+    return {
+      apiKey: '',
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-chat',
+    };
+  }
+  try {
+    const raw = localStorage.getItem(AI_CONFIG_KEY);
+    return raw
+      ? JSON.parse(raw)
+      : {
+          apiKey: '',
+          baseUrl: 'https://api.deepseek.com',
+          model: 'deepseek-chat',
+        };
+  } catch (e) {
+    console.error('Failed to load AI config', e);
+    return {
+      apiKey: '',
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-chat',
+    };
+  }
+};
+
+export const saveAIConfig = (config: AIConfig) => {
+  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(config));
+};
 
 // Fallback UUID generator for environments without crypto.randomUUID
 const generateUUID = () => {

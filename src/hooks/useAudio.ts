@@ -105,7 +105,7 @@ export function useAudio(ttsEnabled = true) {
           gain.disconnect();
         } catch {}
       }, 800);
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [initAudio]);

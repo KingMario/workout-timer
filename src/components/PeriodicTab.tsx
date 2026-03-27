@@ -69,7 +69,6 @@ export default function PeriodicTab({
     cancelAll,
     enableNoSleep,
     disableNoSleep,
-    isSpeaking: audioIsSpeaking,
   } = useAudio(true);
   const periodicTimerRef = useRef<NodeJS.Timeout | null>(null);
   const breakStepTimerRef = useRef<NodeJS.Timeout | null>(null);

@@ -25,15 +25,11 @@ describe('CustomPlanWizard', () => {
     mockAlert.mockImplementation(() => {});
   });
 
-  it('renders nothing when closed', () => {
-    const { container } = render(
-      <CustomPlanWizard
-        isOpen={false}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
-    expect(container).toBeEmptyDOMElement();
+  it('renders correctly when mounted', () => {
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
+    // Since it uses createPortal, we check document.body
+    expect(document.body).not.toBeEmptyDOMElement();
+    expect(screen.getByText('📚 计划库')).toBeInTheDocument();
   });
 
   const enterCreateFlow = async () => {
@@ -43,13 +39,7 @@ describe('CustomPlanWizard', () => {
   };
 
   it('shows plan library by default when open', () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     expect(screen.getByText('📚 计划库')).toBeInTheDocument();
     expect(screen.getByText('📋 系统内置计划')).toBeInTheDocument();
     expect(screen.getByText('+ 新建计划')).toBeInTheDocument();
@@ -57,13 +47,7 @@ describe('CustomPlanWizard', () => {
   });
 
   it('navigates through steps and generates prompt', async () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     await enterCreateFlow();
 
     // Step 1: Fill form
@@ -76,16 +60,16 @@ describe('CustomPlanWizard', () => {
 
     // Submit
     await act(async () => {
-      fireEvent.click(screen.getByText('生成提示词'));
+      fireEvent.click(screen.getByText('手动 (生成提示词)'));
     });
 
     // Step 2: Check prompt generation
     expect(screen.getByText('2. 获取 AI 方案')).toBeInTheDocument();
     expect(screen.getByText(/设计一套 15 分钟/)).toBeInTheDocument();
-    expect(screen.getByText('复制提示词')).toBeInTheDocument();
+    expect(screen.getByText('复制提示词 (手动模式)')).toBeInTheDocument();
 
     // Copy to clipboard
-    fireEvent.click(screen.getByText('复制提示词'));
+    fireEvent.click(screen.getByText('复制提示词 (手动模式)'));
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
     expect(mockAlert).toHaveBeenCalled();
 
@@ -95,19 +79,13 @@ describe('CustomPlanWizard', () => {
   });
 
   it('validates and applies json plan', async () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     await enterCreateFlow();
 
     // Skip to Step 3 directly via state manipulation isn't easy in integration test,
     // so go through steps
     await act(async () => {
-      fireEvent.click(screen.getByText('生成提示词'));
+      fireEvent.click(screen.getByText('手动 (生成提示词)'));
     });
     fireEvent.click(screen.getByText('我已获得 JSON，下一步'));
 
@@ -137,17 +115,11 @@ describe('CustomPlanWizard', () => {
   });
 
   it('disables save until json is provided', async () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     await enterCreateFlow();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('生成提示词'));
+      fireEvent.click(screen.getByText('手动 (生成提示词)'));
     });
     fireEvent.click(screen.getByText('我已获得 JSON，下一步'));
 
@@ -173,13 +145,7 @@ describe('CustomPlanWizard', () => {
   });
 
   it('prompts confirmation on unsaved changes when closing', async () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     await enterCreateFlow();
 
     // Modify a field
@@ -196,18 +162,12 @@ describe('CustomPlanWizard', () => {
   });
 
   it('saves a plan when title is provided', async () => {
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     await enterCreateFlow();
 
     // Go to Step 3
     await act(async () => {
-      fireEvent.click(screen.getByText('生成提示词'));
+      fireEvent.click(screen.getByText('手动 (生成提示词)'));
     });
     fireEvent.click(screen.getByText('我已获得 JSON，下一步'));
 
@@ -264,13 +224,7 @@ describe('CustomPlanWizard', () => {
       JSON.stringify([savedPlan]),
     );
 
-    render(
-      <CustomPlanWizard
-        isOpen={true}
-        onClose={onClose}
-        onPlanLoaded={onPlanLoaded}
-      />,
-    );
+    render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
 
     expect(screen.getByText('Old Plan')).toBeInTheDocument();
 

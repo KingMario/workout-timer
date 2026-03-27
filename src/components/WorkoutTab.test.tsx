@@ -212,8 +212,6 @@ describe('WorkoutTab', () => {
       return minutes * 60 + seconds;
     };
 
-    const before = parseLeftSec(remainingEl.textContent || '');
-
     // Click another step while playing -> should speak and PAUSE countdown
     const stepEls = screen.getAllByText('肩部时钟');
     await act(async () => {
