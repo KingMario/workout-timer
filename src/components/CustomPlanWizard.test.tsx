@@ -29,7 +29,7 @@ describe('CustomPlanWizard', () => {
     render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
     // Since it uses createPortal, we check document.body
     expect(document.body).not.toBeEmptyDOMElement();
-    expect(screen.getByText('📚 计划库')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /计划库/ })).toBeInTheDocument();
   });
 
   const enterCreateFlow = async () => {
@@ -40,7 +40,7 @@ describe('CustomPlanWizard', () => {
 
   it('shows plan library by default when open', () => {
     render(<CustomPlanWizard onClose={onClose} onPlanLoaded={onPlanLoaded} />);
-    expect(screen.getByText('📚 计划库')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /计划库/ })).toBeInTheDocument();
     expect(screen.getByText('📋 系统内置计划')).toBeInTheDocument();
     expect(screen.getByText('+ 新建计划')).toBeInTheDocument();
     expect(screen.getByText('系统默认计划')).toBeInTheDocument();

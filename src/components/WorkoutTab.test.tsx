@@ -11,6 +11,14 @@ import {
 import WorkoutTab from './WorkoutTab';
 
 // Access the global mocks setup in vitest.setup.ts
+// Backwards-compat: some components switched from title->aria-label. Provide a small
+// compatibility helper so legacy tests using screen.getByTitle continue to work.
+// Avoid using `any` to satisfy @typescript-eslint/no-explicit-any
+type ScreenWithGetByTitle = typeof screen & {
+  getByTitle: (t: string) => HTMLElement;
+};
+(screen as unknown as ScreenWithGetByTitle).getByTitle = (t: string) =>
+  screen.getByRole('button', { name: new RegExp(t) });
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 const mockCancel = window.speechSynthesis.cancel as unknown as Mock;
 
@@ -62,7 +70,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       render(<WorkoutTab />);
     });
-    const toggleButton = screen.getByTitle('开始');
+    const toggleButton = screen.getByRole('button', { name: /开始/ });
 
     // Start
     await act(async () => {
@@ -70,8 +78,8 @@ describe('WorkoutTab', () => {
     });
     expect(mockSpeak).toHaveBeenCalled(); // Speaks first item
 
-    // Check if icon changed to pause (title becomes '暂停')
-    expect(screen.getByTitle('暂停')).toBeInTheDocument();
+    // Check if icon changed to pause (aria-label becomes '暂停')
+    expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
 
     // Advance time by 1s
     await act(async () => {
@@ -80,9 +88,9 @@ describe('WorkoutTab', () => {
 
     // Pause
     await act(async () => {
-      fireEvent.click(screen.getByTitle('暂停'));
+      fireEvent.click(screen.getByRole('button', { name: /暂停/ }));
     });
-    expect(screen.getByTitle('开始')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /开始/ })).toBeInTheDocument();
     expect(mockCancel).toHaveBeenCalled();
   });
 
@@ -91,7 +99,7 @@ describe('WorkoutTab', () => {
       render(<WorkoutTab />);
     });
     await act(async () => {
-      fireEvent.click(screen.getByTitle('开始'));
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
     });
 
     // Finish initial speech to start timer
@@ -131,7 +139,7 @@ describe('WorkoutTab', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTitle('重置'));
+      fireEvent.click(screen.getByRole('button', { name: /重置/ }));
     });
     expect(screen.getByTitle('开始')).toBeInTheDocument();
   });
@@ -140,7 +148,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       render(<WorkoutTab />);
     });
-    const ttsBtn = screen.getByTitle('语音播报开关');
+    const ttsBtn = screen.getByRole('button', { name: /语音播报/ });
 
     await act(async () => {
       fireEvent.click(ttsBtn);

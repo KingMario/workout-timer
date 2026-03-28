@@ -11,6 +11,13 @@ import {
 import PeriodicTab from './PeriodicTab';
 
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
+// Backwards-compat helper for tests that still use getByTitle
+// Avoid using `any` to satisfy @typescript-eslint/no-explicit-any
+type ScreenWithGetByTitle = typeof screen & {
+  getByTitle: (t: string) => HTMLElement;
+};
+(screen as unknown as ScreenWithGetByTitle).getByTitle = (t: string) =>
+  screen.getByRole('button', { name: new RegExp(t) });
 
 describe('PeriodicTab', () => {
   beforeEach(() => {
@@ -49,7 +56,9 @@ describe('PeriodicTab', () => {
     expect(screen.getByText('⏰ 办公间歇拉伸')).toBeInTheDocument();
     expect(screen.getByText('下次提醒倒计时')).toBeInTheDocument();
 
-    const startBtn = screen.getByTitle('开启自动提醒');
+    const startBtn = screen.getByRole('button', {
+      name: /开启自动提醒|停止提醒|停止自动提醒/,
+    });
 
     await act(async () => {
       fireEvent.click(startBtn);
@@ -61,13 +70,19 @@ describe('PeriodicTab', () => {
 
     await finishSpeech();
 
-    expect(screen.getByTitle('停止提醒')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /停止(?:自动)?提醒/ }),
+    ).toBeInTheDocument();
 
     // Stop
     await act(async () => {
-      fireEvent.click(screen.getByTitle('停止提醒'));
+      fireEvent.click(
+        screen.getByRole('button', { name: /停止(?:自动)?提醒/ }),
+      );
     });
-    expect(screen.getByTitle('开启自动提醒')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /开启自动提醒/ }),
+    ).toBeInTheDocument();
   });
 
   it('enters break mode and advances break steps with speech', async () => {

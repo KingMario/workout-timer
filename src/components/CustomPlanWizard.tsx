@@ -196,6 +196,15 @@ export default function CustomPlanWizard({
     };
 
     window.addEventListener('keydown', handleKeyDown);
+
+    // Focus the close button for keyboard users when modal opens
+    const closeBtn = document.getElementById(
+      'custom-plan-close-btn',
+    ) as HTMLButtonElement | null;
+    if (closeBtn) {
+      closeBtn.focus();
+    }
+
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleClose]);
 
@@ -323,7 +332,17 @@ ${codeBlockEnd}
       }
 
       const parsed = JSON.parse(cleanJson);
-      const validated = WorkoutPlanSchema.parse(parsed);
+
+      // Use safeParse to avoid throwing exceptions from zod and provide friendlier errors
+      const result = WorkoutPlanSchema.safeParse(parsed);
+      if (!result.success) {
+        setError(
+          'JSON 格式验证失败: ' +
+            result.error.issues.map((err) => err.message).join(', '),
+        );
+        return;
+      }
+      const validated = result.data;
 
       // Save plan logic
       const titleToSave =
@@ -334,11 +353,7 @@ ${codeBlockEnd}
       onClose();
     } catch (e) {
       console.error(e);
-      if (e instanceof z.ZodError) {
-        setError(
-          'JSON 格式验证失败: ' + e.issues.map((err) => err.message).join(', '),
-        );
-      } else if (e instanceof SyntaxError) {
+      if (e instanceof SyntaxError) {
         setError('JSON 语法错误，请检查是否完整。');
       } else {
         setError(
@@ -362,10 +377,18 @@ ${codeBlockEnd}
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col transition-all">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="custom-plan-dialog-title"
+        className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col transition-all"
+      >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <h2
+            id="custom-plan-dialog-title"
+            className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"
+          >
             {mode === 'saved' ? (
               '📚 计划库'
             ) : (
@@ -394,9 +417,11 @@ ${codeBlockEnd}
               </button>
             )}
             <button
+              id="custom-plan-close-btn"
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-2"
               aria-label="关闭"
+              autoFocus
             >
               <svg
                 className="w-6 h-6"
@@ -421,7 +446,7 @@ ${codeBlockEnd}
             <div className="space-y-6">
               {/* Built-in Plans */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-300 uppercase tracking-wider">
                   📋 系统内置计划
                 </h3>
                 {BUILT_IN_PLANS.map((plan) => {
@@ -443,7 +468,7 @@ ${codeBlockEnd}
                             {plan.title}
                           </div>
                           {isActive && (
-                            <span className="text-[10px] bg-green-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                            <span className="text-[10px] bg-green-700 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
                               当前使用
                             </span>
                           )}
@@ -475,7 +500,7 @@ ${codeBlockEnd}
 
               {/* Saved Plans */}
               <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-gray-400 dark:text-zinc-300 uppercase tracking-wider">
                   💾 我的收藏
                 </h3>
                 {savedPlans.length === 0 ? (
@@ -902,7 +927,7 @@ ${codeBlockEnd}
                       <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
                         AI 正在为您定制计划...
                       </div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         这可能需要 10-30 秒，请稍候
                       </p>
                     </div>
@@ -1031,7 +1056,7 @@ ${codeBlockEnd}
               {step === 2 && (
                 <button
                   onClick={() => setStep(3)}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  className="px-6 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg transition-colors"
                 >
                   我已获得 JSON，下一步
                 </button>
@@ -1043,8 +1068,8 @@ ${codeBlockEnd}
                   disabled={isJsonEmpty}
                   className={`px-6 py-2 rounded-lg transition-colors font-bold ${
                     isJsonEmpty
-                      ? 'bg-green-600/40 text-white cursor-not-allowed opacity-60'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      ? 'bg-green-700/40 text-white cursor-not-allowed opacity-60'
+                      : 'bg-green-700 hover:bg-green-800 text-white'
                   }`}
                 >
                   保存并应用

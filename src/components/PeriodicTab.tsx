@@ -216,12 +216,20 @@ export default function PeriodicTab({
       <div className="mt-2">
         <h2 className="text-xl font-bold">⏰ 办公间歇拉伸</h2>
         {isBreakActive && activeBreakSteps[activeBreakIdx] ? (
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-label={`正在休息，第 ${activeBreakIdx + 1} / 3 个动作，剩余 ${breakStepTimeLeft} 秒`}
+            className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top-2 duration-300 mt-4"
+          >
             <div className="flex justify-between items-start mb-2">
               <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
                 正在休息 ({activeBreakIdx + 1}/3)
               </div>
-              <div className="text-xl font-mono font-bold text-blue-700 dark:text-blue-300">
+              <div
+                className="text-xl font-mono font-bold text-blue-700 dark:text-blue-300"
+                aria-hidden="true"
+              >
                 {breakStepTimeLeft}s
               </div>
             </div>
@@ -235,10 +243,14 @@ export default function PeriodicTab({
         ) : (
           <div className="grid grid-cols-2 gap-4 items-end mt-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="periodic-interval"
+                className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1"
+              >
                 提醒频率
               </label>
               <select
+                id="periodic-interval"
                 value={periodicInterval}
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
@@ -318,8 +330,9 @@ export default function PeriodicTab({
         <div className="flex items-center gap-4">
           <button
             onClick={togglePeriodic}
-            title={isPeriodicRunning ? '停止提醒' : '开启自动提醒'}
-            className={`px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all active:scale-95 ${isPeriodicRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'}`}
+            aria-label={isPeriodicRunning ? '停止自动提醒' : '开启自动提醒'}
+            aria-pressed={isPeriodicRunning}
+            className={`px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all active:scale-95 ${isPeriodicRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-green-700 hover:bg-green-800'}`}
           >
             {isPeriodicRunning ? '停止提醒' : '开启自动提醒'}
           </button>

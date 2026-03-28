@@ -76,10 +76,21 @@ body {
 }
 
 .disclaimer-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: #0b1220; /* dark background */
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   padding: 20px 16px;
+  color: #e6eef8;
+}
+
+/* Ensure links and headings are visible in dark mode */
+.disclaimer-card h1,
+.disclaimer-card h2 {
+  color: #e6eef8;
+}
+
+.disclaimer-card p {
+  color: #cfdff2;
 }
 
 .disclaimer-card h1 {
@@ -109,7 +120,8 @@ body {
 }
 
 .disclaimer-back-link {
-  color: #1d4ed8;
+  /* Use a lighter blue with sufficient contrast against dark background */
+  color: #93c5fd; /* tailwind sky-300 */
   text-decoration: underline;
   text-underline-offset: 2px;
   font-weight: 600;

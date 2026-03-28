@@ -258,7 +258,14 @@ export default function WorkoutTab() {
           </div>
         </div>
         <div className="mt-4 flex flex-col gap-2">
-          <div className="w-full h-3 bg-blue-50 dark:bg-zinc-900 rounded-full overflow-hidden">
+          <div
+            className="w-full h-3 bg-blue-50 dark:bg-zinc-900 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={Math.round(progressPercent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="锻炼进度"
+          >
             <div
               className="h-full bg-linear-to-r from-green-500 to-blue-400 transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
@@ -303,12 +310,12 @@ export default function WorkoutTab() {
               <React.Fragment key={idx}>
                 {isFirstInSection && (
                   <div className="mt-4 mb-2 sticky top-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm py-2 z-5 border-b border-gray-50 dark:border-zinc-800 flex justify-between items-center">
-                    <div className="font-bold text-green-600 dark:text-green-500">
+                    <h3 className="font-bold text-green-600 dark:text-green-500">
                       {step.section}阶段
-                    </div>
+                    </h3>
                     {section?.allowRounds && (
                       <select
-                        aria-label="section rounds"
+                        aria-label={`${step.section}阶段循环次数`}
                         disabled={isRunning}
                         value={
                           sectionRounds[step.section] || section.defaultRounds
@@ -332,10 +339,19 @@ export default function WorkoutTab() {
                   </div>
                 )}
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => jumpToStep(idx)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      jumpToStep(idx);
+                    }
+                  }}
+                  aria-current={idx === currentIdx ? 'step' : undefined}
                   className={`flex items-start p-3 rounded-lg cursor-pointer transition-colors ${idx === currentIdx ? 'current-step bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-100 dark:ring-blue-900/50' : 'hover:bg-gray-50 dark:hover:bg-zinc-900/50'}`}
                 >
-                  <span className="w-8 text-gray-400 dark:text-zinc-500 text-sm mt-0.5">
+                  <span className="w-8 text-gray-500 dark:text-zinc-400 text-sm mt-0.5">
                     {idx + 1}.
                   </span>
                   <div className="flex-1 flex justify-between items-center">
@@ -344,7 +360,7 @@ export default function WorkoutTab() {
                     >
                       {step.name}
                     </span>
-                    <span className="text-sm text-gray-400 dark:text-zinc-500">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       ({formatTime(step.duration)})
                     </span>
                   </div>
@@ -359,7 +375,8 @@ export default function WorkoutTab() {
         <button
           onClick={() => setTtsEnabled(!ttsEnabled)}
           className={`p-3 rounded-full transition-colors ${ttsEnabled ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 shadow-sm' : 'text-gray-400 bg-gray-100 dark:bg-zinc-800'}`}
-          title="语音播报开关"
+          aria-label={ttsEnabled ? '关闭语音播报' : '开启语音播报'}
+          aria-pressed={ttsEnabled}
         >
           {ttsEnabled ? (
             <svg
@@ -367,6 +384,8 @@ export default function WorkoutTab() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
             >
               <path
                 strokeLinecap="round"
@@ -381,6 +400,8 @@ export default function WorkoutTab() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
             >
               <path
                 strokeLinecap="round"
@@ -397,13 +418,15 @@ export default function WorkoutTab() {
             <button
               onClick={togglePlay}
               className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition-all"
-              title={isRunning ? '暂停' : '开始'}
+              aria-label={isFinished ? '重新开始' : isRunning ? '暂停' : '开始'}
             >
               {isRunning ? (
                 <svg
                   className="w-8 h-8"
                   fill="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
                 </svg>
@@ -412,6 +435,8 @@ export default function WorkoutTab() {
                   className="w-8 h-8 ml-1"
                   fill="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M8 5v14l11-7z" />
                 </svg>
@@ -420,13 +445,15 @@ export default function WorkoutTab() {
             <button
               onClick={handleReset}
               className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800 text-red-500 shadow-sm"
-              title="重置"
+              aria-label="重置计时器"
             >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
               >
                 <path
                   strokeLinecap="round"
