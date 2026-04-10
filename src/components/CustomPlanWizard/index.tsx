@@ -163,6 +163,7 @@ export default function CustomPlanWizard({
               }}
               onDeletePlan={actions.handleDeletePlan}
               onRenamePlan={actions.handleRenamePlan}
+              onCopyPlan={actions.handleCopyPlanJSON}
               onClose={onClose}
             />
           ) : (

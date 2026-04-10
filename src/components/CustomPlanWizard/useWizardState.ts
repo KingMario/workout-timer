@@ -252,6 +252,13 @@ export function useWizardState(
     setSavedPlans(getSavedPlans());
   }, []);
 
+  const handleCopyPlanJSON = useCallback((plan: SavedPlan) => {
+    const jsonString = JSON.stringify(plan.data, null, 2);
+    const fenced = `\`\`\`json\n${jsonString}\n\`\`\``;
+    navigator.clipboard.writeText(fenced);
+    alert(`计划 "${plan.title}" 的 JSON 数据已复制到剪贴板！`);
+  }, []);
+
   const handleLoadPlan = useCallback(
     (plan: SavedPlan) => {
       onPlanLoaded(plan.data, plan.id);
@@ -297,6 +304,7 @@ export function useWizardState(
       handleJsonSubmit,
       handleDeletePlan,
       handleRenamePlan,
+      handleCopyPlanJSON,
       handleLoadPlan,
     },
   };

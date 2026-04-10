@@ -7,6 +7,7 @@ describe('WizardSavedPlans', () => {
   const mockOnLoadBuiltInPlan = vi.fn();
   const mockOnDeletePlan = vi.fn();
   const mockOnRenamePlan = vi.fn();
+  const mockOnCopyPlan = vi.fn();
   const mockOnClose = vi.fn();
 
   const dummySavedPlans = [
@@ -25,6 +26,7 @@ describe('WizardSavedPlans', () => {
     onLoadBuiltInPlan: mockOnLoadBuiltInPlan,
     onDeletePlan: mockOnDeletePlan,
     onRenamePlan: mockOnRenamePlan,
+    onCopyPlan: mockOnCopyPlan,
     onClose: mockOnClose,
   };
 
@@ -108,5 +110,13 @@ describe('WizardSavedPlans', () => {
     fireEvent.blur(input);
 
     expect(mockOnRenamePlan).toHaveBeenCalledWith('saved-1', 'Blurred Title');
+  });
+
+  it('handles copying a plan JSON', () => {
+    render(<WizardSavedPlans {...defaultProps} />);
+    const copyButton = screen.getByTitle('复制 JSON');
+
+    fireEvent.click(copyButton);
+    expect(mockOnCopyPlan).toHaveBeenCalledWith(dummySavedPlans[0]);
   });
 });
