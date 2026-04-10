@@ -6,6 +6,7 @@ describe('WizardSavedPlans', () => {
   const mockOnLoadPlan = vi.fn();
   const mockOnLoadBuiltInPlan = vi.fn();
   const mockOnDeletePlan = vi.fn();
+  const mockOnRenamePlan = vi.fn();
   const mockOnClose = vi.fn();
 
   const dummySavedPlans = [
@@ -23,6 +24,7 @@ describe('WizardSavedPlans', () => {
     onLoadPlan: mockOnLoadPlan,
     onLoadBuiltInPlan: mockOnLoadBuiltInPlan,
     onDeletePlan: mockOnDeletePlan,
+    onRenamePlan: mockOnRenamePlan,
     onClose: mockOnClose,
   };
 
@@ -62,5 +64,49 @@ describe('WizardSavedPlans', () => {
 
     fireEvent.click(deleteButton);
     expect(mockOnDeletePlan).toHaveBeenCalledWith('saved-1');
+  });
+
+  it('enters editing mode when rename button is clicked', () => {
+    render(<WizardSavedPlans {...defaultProps} />);
+    const renameButton = screen.getByTitle('重命名');
+
+    fireEvent.click(renameButton);
+
+    const input = screen.getByDisplayValue('My Custom Plan');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('submits rename on Enter', () => {
+    render(<WizardSavedPlans {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('重命名'));
+
+    const input = screen.getByDisplayValue('My Custom Plan');
+    fireEvent.change(input, { target: { value: 'New Title' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(mockOnRenamePlan).toHaveBeenCalledWith('saved-1', 'New Title');
+  });
+
+  it('cancels editing on Escape', () => {
+    render(<WizardSavedPlans {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('重命名'));
+
+    const input = screen.getByDisplayValue('My Custom Plan');
+    fireEvent.change(input, { target: { value: 'New Title' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(screen.queryByDisplayValue('New Title')).not.toBeInTheDocument();
+    expect(screen.getByText('My Custom Plan')).toBeInTheDocument();
+  });
+
+  it('submits rename on blur if title changed', () => {
+    render(<WizardSavedPlans {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('重命名'));
+
+    const input = screen.getByDisplayValue('My Custom Plan');
+    fireEvent.change(input, { target: { value: 'Blurred Title' } });
+    fireEvent.blur(input);
+
+    expect(mockOnRenamePlan).toHaveBeenCalledWith('saved-1', 'Blurred Title');
   });
 });

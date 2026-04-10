@@ -93,6 +93,14 @@ export const deletePlan = (id: string) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPlans));
 };
 
+export const renamePlan = (id: string, newTitle: string) => {
+  const plans = getSavedPlans();
+  const updatedPlans = plans.map((p) =>
+    p.id === id ? { ...p, title: newTitle } : p,
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPlans));
+};
+
 export const getActivePlan = (): {
   plan: WorkoutPlan;
   id?: string;

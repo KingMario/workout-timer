@@ -20,6 +20,7 @@ vi.mock('../../utils/storage', () => ({
     createdAt: Date.now(),
   })),
   deletePlan: vi.fn(),
+  renamePlan: vi.fn(),
 }));
 
 const mockOnPlanLoaded = vi.fn();
@@ -365,6 +366,25 @@ describe('useWizardState – handleDeletePlan', () => {
     });
 
     expect(vi.mocked(storage.deletePlan)).not.toHaveBeenCalled();
+  });
+});
+
+describe('useWizardState – handleRenamePlan', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('calls renamePlan and refreshes the list', () => {
+    vi.mocked(storage.getSavedPlans).mockReturnValue([]);
+
+    const { result } = renderWizard();
+    act(() => {
+      result.current.actions.handleRenamePlan('plan-123', '新名字');
+    });
+
+    expect(vi.mocked(storage.renamePlan)).toHaveBeenCalledWith(
+      'plan-123',
+      '新名字',
+    );
+    expect(vi.mocked(storage.getSavedPlans)).toHaveBeenCalled();
   });
 });
 

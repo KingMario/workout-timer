@@ -6,6 +6,7 @@ import {
   getSavedPlans,
   saveAIConfig,
   savePlan,
+  renamePlan,
   type AIConfig,
   type SavedPlan,
 } from '../../utils/storage';
@@ -246,6 +247,11 @@ export function useWizardState(
     }
   }, []);
 
+  const handleRenamePlan = useCallback((id: string, newTitle: string) => {
+    renamePlan(id, newTitle);
+    setSavedPlans(getSavedPlans());
+  }, []);
+
   const handleLoadPlan = useCallback(
     (plan: SavedPlan) => {
       onPlanLoaded(plan.data, plan.id);
@@ -290,6 +296,7 @@ export function useWizardState(
       copyToClipboard,
       handleJsonSubmit,
       handleDeletePlan,
+      handleRenamePlan,
       handleLoadPlan,
     },
   };

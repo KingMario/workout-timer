@@ -162,6 +162,7 @@ export default function CustomPlanWizard({
                 onPlanLoaded(planMap.data, planMap.id);
               }}
               onDeletePlan={actions.handleDeletePlan}
+              onRenamePlan={actions.handleRenamePlan}
               onClose={onClose}
             />
           ) : (
