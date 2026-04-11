@@ -15,17 +15,10 @@ export default function WizardStep2AI({
         提示词已生成。如果您没有配置 API，可以点击下方按钮复制提示词，然后发送给
         DeepSeek、ChatGPT 或其他 AI 助手。
       </p>
-      <pre
-        tabIndex={0}
-        role="region"
-        aria-label="生成的 AI 提示词"
-        className="bg-gray-50 dark:bg-zinc-800 p-4 rounded-md text-xs font-mono overflow-x-auto whitespace-pre-wrap max-h-60 border border-gray-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none text-gray-900 dark:text-zinc-100"
-      >
-        <code>{generatedPrompt}</code>
-      </pre>
+
       <button
         onClick={onCopy}
-        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 shadow-sm"
       >
         <svg
           className="w-5 h-5"
@@ -43,6 +36,20 @@ export default function WizardStep2AI({
         </svg>
         复制提示词 (手动模式)
       </button>
+
+      <div className="relative">
+        <div className="absolute top-0 right-0 px-2 py-1 bg-gray-200 dark:bg-zinc-700 text-[10px] text-gray-500 dark:text-gray-400 rounded-bl font-bold uppercase tracking-wider rounded-tr-md">
+          Prompt
+        </div>
+        <pre
+          tabIndex={0}
+          role="region"
+          aria-label="生成的 AI 提示词"
+          className="bg-gray-50 dark:bg-zinc-800 p-4 pt-8 rounded-md text-xs font-mono overflow-x-auto whitespace-pre-wrap max-h-60 border border-gray-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none text-gray-900 dark:text-zinc-100"
+        >
+          <code>{generatedPrompt}</code>
+        </pre>
+      </div>
     </div>
   );
 }
