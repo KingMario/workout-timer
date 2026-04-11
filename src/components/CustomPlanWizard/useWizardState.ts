@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { WorkoutPlan, WorkoutPlanSchema } from '../../schemas/workout-plan';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   deletePlan,
   getAIConfig,
@@ -181,9 +182,13 @@ export function useWizardState(
     alert('AI 配置已保存！');
   }, [aiConfig]);
 
-  const copyToClipboard = useCallback(() => {
-    navigator.clipboard.writeText(generatedPrompt);
-    alert('提示词已复制！请前往 DeepSeek 或其他 AI 工具粘贴。');
+  const handleCopyToClipboard = useCallback(async () => {
+    const success = await copyToClipboard(generatedPrompt);
+    if (success) {
+      alert('提示词已复制！请前往 DeepSeek 或其他 AI 工具粘贴。');
+    } else {
+      alert('无法自动复制，请手动选择并复制文本。');
+    }
   }, [generatedPrompt]);
 
   const handleJsonSubmit = useCallback(() => {
@@ -252,11 +257,16 @@ export function useWizardState(
     setSavedPlans(getSavedPlans());
   }, []);
 
-  const handleCopyPlanJSON = useCallback((plan: SavedPlan) => {
+  const handleCopyPlanJSON = useCallback(async (plan: SavedPlan) => {
     const jsonString = JSON.stringify(plan.data, null, 2);
     const fenced = `\`\`\`json\n${jsonString}\n\`\`\``;
-    navigator.clipboard.writeText(fenced);
-    alert(`计划 "${plan.title}" 的 JSON 数据已复制到剪贴板！`);
+
+    const success = await copyToClipboard(fenced);
+    if (success) {
+      alert(`计划 "${plan.title}" 的 JSON 数据已复制到剪贴板！`);
+    } else {
+      alert('无法自动复制，请手动复制 JSON 数据。');
+    }
   }, []);
 
   const handleLoadPlan = useCallback(
@@ -300,7 +310,7 @@ export function useWizardState(
       onGeneratePrompt,
       handleAiGenerate,
       saveConfig,
-      copyToClipboard,
+      handleCopyToClipboard,
       handleJsonSubmit,
       handleDeletePlan,
       handleRenamePlan,

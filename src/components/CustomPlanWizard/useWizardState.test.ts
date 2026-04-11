@@ -29,6 +29,14 @@ const mockOnClose = vi.fn();
 const mockConfirm = vi.spyOn(window, 'confirm');
 const mockAlert = vi.spyOn(window, 'alert');
 
+// Mock clipboard and secure context
+Object.assign(window, { isSecureContext: true });
+Object.assign(navigator, {
+  clipboard: {
+    writeText: vi.fn().mockResolvedValue(undefined),
+  },
+});
+
 const renderWizard = () =>
   renderHook(() => useWizardState(mockOnPlanLoaded, mockOnClose));
 
@@ -189,13 +197,12 @@ describe('useWizardState – copyToClipboard', () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn() } });
   });
 
-  it('copies generated prompt to clipboard', () => {
+  it('copies generated prompt to clipboard', async () => {
     const { result } = renderWizard();
-
     const mockFormData = {
-      duration: '15',
+      duration: '20',
       age: '',
-      gender: 'Private',
+      gender: 'Private' as const,
       height: '',
       weight: '',
       injuries: '',
@@ -211,8 +218,8 @@ describe('useWizardState – copyToClipboard', () => {
       result.current.actions.onGeneratePrompt(mockFormData);
     });
 
-    act(() => {
-      result.current.actions.copyToClipboard();
+    await act(async () => {
+      await result.current.actions.handleCopyToClipboard();
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(

@@ -49,7 +49,9 @@ describe('WizardSavedPlans', () => {
     const savedPlanCard = screen
       .getByText('My Custom Plan')
       .closest('div[class*="justify-between"]');
-    const loadButton = within(savedPlanCard!).getByText('载入');
+    const loadButton = within(savedPlanCard!).getByRole('button', {
+      name: /载入/,
+    });
 
     fireEvent.click(loadButton);
     expect(mockOnLoadPlan).toHaveBeenCalledWith(dummySavedPlans[0]);

@@ -186,7 +186,7 @@ export default function CustomPlanWizard({
               {state.step === 2 && (
                 <WizardStep2AI
                   generatedPrompt={state.generatedPrompt}
-                  onCopy={actions.copyToClipboard}
+                  onCopy={actions.handleCopyToClipboard}
                 />
               )}
               {state.step === 3 && (
