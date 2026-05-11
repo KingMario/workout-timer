@@ -1,4 +1,5 @@
 import { DEFAULT_PLAN } from './default-plan';
+import { MCKENZIE_PLAN } from './mckenzie-plan';
 import { SEATED_WORKOUT_PLAN } from './seated-workout-plan';
 import { BREAK_PLAN } from './break-plan';
 import type { WorkoutPlan } from './workout-plan';
@@ -23,6 +24,12 @@ export const BUILT_IN_PLANS: BuiltInPlan[] = [
     data: SEATED_WORKOUT_PLAN,
     description: '针对久坐人群，可在工位或交通工具上完成的温和锻炼。',
   },
+  {
+    id: 'mckenzie',
+    title: '麦肯基疗法',
+    data: MCKENZIE_PLAN,
+    description: '经典腰椎康复方案，通过俯卧伸展动作缓解腰椎间盘压力。',
+  },
 ];
 
-export { DEFAULT_PLAN, SEATED_WORKOUT_PLAN, BREAK_PLAN };
+export { DEFAULT_PLAN, MCKENZIE_PLAN, SEATED_WORKOUT_PLAN, BREAK_PLAN };
