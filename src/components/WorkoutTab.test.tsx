@@ -120,6 +120,7 @@ class AudioMock {
 describe('WorkoutTab', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
     mockSpeak.mockClear();
     mockCancel.mockClear();
     mockAudioSources.length = 0;
@@ -229,7 +230,7 @@ describe('WorkoutTab', () => {
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
   });
 
-  it('stops recorded audio before falling back when playback start times out', async () => {
+  it('does not use browser speech when built-in recorded audio times out', async () => {
     mockAudioMode = 'slow-start';
 
     await act(async () => {
@@ -245,23 +246,49 @@ describe('WorkoutTab', () => {
     );
 
     await act(async () => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(8000);
     });
 
     expect(mockAudioInstances[0]?.pause).toHaveBeenCalled();
     expect(mockAudioInstances[0]?.removeAttribute).toHaveBeenCalledWith('src');
-    expect(mockSpeak).toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining('热身阶段') }),
+    expect(mockSpeak).not.toHaveBeenCalled();
+  });
+
+  it('uses browser speech for custom plans without recorded audio', async () => {
+    localStorage.setItem(
+      'mario_workout_timer_active_plan',
+      JSON.stringify({
+        id: 'custom-plan',
+        plan: [
+          {
+            name: '自定义阶段',
+            tips: '',
+            allowRounds: false,
+            defaultRounds: 1,
+            maxRounds: 1,
+            steps: [
+              {
+                name: '自定义动作',
+                desc: '自定义动作说明',
+                duration: 10,
+              },
+            ],
+          },
+        ],
+      }),
     );
-    const pauseCallsBeforePlayResolves =
-      mockAudioInstances[0]?.pause.mock.calls.length ?? 0;
 
     await act(async () => {
-      mockAudioInstances[0]?.resolvePlay?.();
+      render(<WorkoutTab />);
     });
 
-    expect(mockAudioInstances[0]?.pause.mock.calls.length).toBeGreaterThan(
-      pauseCallsBeforePlayResolves,
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    expect(mockAudioSources).toHaveLength(0);
+    expect(mockSpeak).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('自定义动作') }),
     );
   });
 
@@ -287,7 +314,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(toggleButton);
     });
-    expect(mockSpeak).toHaveBeenCalled(); // Speaks first item
+    expect(mockSpeak).not.toHaveBeenCalled();
     expect(
       mockAudioSources.some((source) =>
         source.endsWith('audio/built-in-plans/yunxi/planA-s1.mp3'),
@@ -311,6 +338,8 @@ describe('WorkoutTab', () => {
   });
 
   it('handles item transition with ding and speech delay', async () => {
+    mockAudioMode = 'play-success';
+
     await act(async () => {
       render(<WorkoutTab />);
     });
@@ -318,10 +347,11 @@ describe('WorkoutTab', () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
     });
 
-    // Finish initial speech to start timer
-    await finishSpeech();
+    // Finish initial recorded speech to start timer
+    await finishInitialRecordedSpeech();
 
-    mockSpeak.mockClear(); // Clear the initial speak call
+    mockSpeak.mockClear();
+    mockAudioSources.length = 0;
 
     // Fast forward to end of first item (60s)
     await act(async () => {
@@ -337,8 +367,12 @@ describe('WorkoutTab', () => {
       vi.advanceTimersByTime(1500);
     });
 
-    expect(mockSpeak).toHaveBeenCalled();
-    expect(mockSpeak.mock.calls[0][0].text).toContain('肩部时钟');
+    expect(mockSpeak).not.toHaveBeenCalled();
+    expect(
+      mockAudioSources.some((source) =>
+        source.endsWith('audio/built-in-plans/yunxi/planA-s1-e2-name.mp3'),
+      ),
+    ).toBe(true);
   });
 
   it('resets the timer', async () => {
@@ -410,9 +444,7 @@ describe('WorkoutTab', () => {
         source.endsWith('audio/built-in-plans/yunxi/planA-s1-e2-name.mp3'),
       ),
     ).toBe(true);
-    expect(mockSpeak).toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining('肩部时钟') }),
-    );
+    expect(mockSpeak).not.toHaveBeenCalled();
   });
 
   it('cancels the current recorded audio queue when jumping to another step', async () => {
@@ -458,6 +490,8 @@ describe('WorkoutTab', () => {
   });
 
   it('manual jump pauses timer until speech ends', async () => {
+    mockAudioMode = 'play-success';
+
     await act(async () => {
       render(<WorkoutTab />);
     });
@@ -466,7 +500,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
-    await finishSpeech();
+    await finishInitialRecordedSpeech();
 
     // Advance 2s to let timer decrement
     await act(async () => {
@@ -494,7 +528,7 @@ describe('WorkoutTab', () => {
     // capture the left-side time immediately after click
     const afterClick = parseLeftSec(remainingEl.textContent || '');
 
-    // Advance time while speech is ongoing (we haven't called finishSpeech)
+    // Advance time while recorded audio is ongoing.
     await act(async () => {
       vi.advanceTimersByTime(3000);
     });
@@ -502,8 +536,13 @@ describe('WorkoutTab', () => {
     const during = parseLeftSec(remainingEl.textContent || '');
     expect(during).toBe(afterClick);
 
-    // Finish speech and advance, timer should resume
-    await finishSpeech();
+    // Finish recorded speech and advance, timer should resume
+    await act(async () => {
+      mockAudioInstances[0]?.finish();
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.finish();
+    });
     await act(async () => {
       vi.advanceTimersByTime(2000);
     });

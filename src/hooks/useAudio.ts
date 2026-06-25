@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import NoSleep from 'nosleep.js';
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
+const RECORDED_AUDIO_START_TIMEOUT_MS = 8000;
+const preloadedAudioPaths = new Set<string>();
 
 const resolveAudioPath = (filePath: string) => {
   if (ABSOLUTE_URL_PATTERN.test(filePath) || typeof window === 'undefined') {
@@ -53,6 +55,27 @@ export function useAudio(ttsEnabled = true) {
     }
 
     return recordedAudioRef.current;
+  }, []);
+
+  const preloadRecordedAudio = useCallback((audioPath: string | string[]) => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const audioPaths = Array.isArray(audioPath) ? audioPath : [audioPath];
+    audioPaths.filter(Boolean).forEach((path) => {
+      const resolvedPath = resolveAudioPath(path);
+      if (preloadedAudioPaths.has(resolvedPath)) {
+        return;
+      }
+
+      preloadedAudioPaths.add(resolvedPath);
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'audio';
+      link.href = resolvedPath;
+      document.head.appendChild(link);
+    });
   }, []);
 
   const cancelCurrentAudio = useCallback(() => {
@@ -249,7 +272,7 @@ export function useAudio(ttsEnabled = true) {
           cleanup();
           stopAudio();
           resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
-        }, 2000);
+        }, RECORDED_AUDIO_START_TIMEOUT_MS);
 
         try {
           audio.pause();
@@ -369,6 +392,11 @@ export function useAudio(ttsEnabled = true) {
 
       const playbackId = beginPlayback();
       setIsSpeaking(true);
+      playableSegments.forEach((segment) => {
+        if (segment.audio) {
+          preloadRecordedAudio(segment.audio);
+        }
+      });
       for (const segment of playableSegments) {
         if (!isCurrentPlayback(playbackId)) {
           return;
@@ -379,7 +407,7 @@ export function useAudio(ttsEnabled = true) {
           return;
         }
 
-        if (audioStatus === 'failed') {
+        if (!segment.audio && audioStatus === 'failed') {
           await speakText(segment.text);
           if (!isCurrentPlayback(playbackId)) {
             return;
@@ -397,6 +425,7 @@ export function useAudio(ttsEnabled = true) {
       isCurrentPlayback,
       playDing,
       playRecordedAudio,
+      preloadRecordedAudio,
       speakText,
       ttsEnabled,
     ],
