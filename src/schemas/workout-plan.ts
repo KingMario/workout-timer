@@ -4,6 +4,8 @@ export const StepSchema = z.object({
   name: z.string().describe('动作名称'),
   desc: z.string().describe('动作简要描述'),
   duration: z.number().min(1).describe('持续时间(秒)'),
+  nameAudio: z.string().optional().describe('动作名称的预录制语音文件路径'),
+  audio: z.string().optional().describe('预录制的语音播报文件路径'),
 });
 
 export const SectionSchema = z.object({
@@ -13,6 +15,7 @@ export const SectionSchema = z.object({
   defaultRounds: z.number().min(1).describe('默认循环组数'),
   maxRounds: z.number().min(1).describe('最大建议循环组数'),
   steps: z.array(StepSchema).describe('该阶段包含的动作列表'),
+  audio: z.string().optional().describe('阶段名称的语音播报文件路径'),
 });
 
 export const WorkoutPlanSchema = z

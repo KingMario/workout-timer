@@ -25,6 +25,12 @@ export const BUILT_IN_PLANS: BuiltInPlan[] = [
     description: '针对久坐人群，可在工位或交通工具上完成的温和锻炼。',
   },
   {
+    id: 'break-plan',
+    title: '间歇拉伸计划',
+    data: BREAK_PLAN,
+    description: '适合在办公桌前快速进行，缓解久坐带来的颈肩腰背压力。',
+  },
+  {
     id: 'mckenzie',
     title: '麦肯基疗法',
     data: MCKENZIE_PLAN,

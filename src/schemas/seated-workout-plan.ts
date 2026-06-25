@@ -1,6 +1,7 @@
+import { withBuiltInPlanAudio } from './built-in-plan-audio';
 import type { WorkoutPlan } from './workout-plan';
 
-export const SEATED_WORKOUT_PLAN: WorkoutPlan = [
+const RAW_SEATED_WORKOUT_PLAN: WorkoutPlan = [
   {
     name: '活动性训练',
     tips: '针对颈椎、腰椎和膝盖的温和活动，地铁中可坐姿完成，动作舒缓不引人注目',
@@ -113,3 +114,8 @@ export const SEATED_WORKOUT_PLAN: WorkoutPlan = [
     ],
   },
 ];
+
+export const SEATED_WORKOUT_PLAN = withBuiltInPlanAudio(
+  'planB',
+  RAW_SEATED_WORKOUT_PLAN,
+);

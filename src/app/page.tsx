@@ -10,16 +10,21 @@ const DISCLAIMER_AGREED_AT_KEY = 'disclaimerAgreedAt';
 
 export default function WorkoutTimer() {
   const [mode, setMode] = useState<'workout' | 'periodic'>('workout');
-  const [showDisclaimerNotice, setShowDisclaimerNotice] = useState(false);
+  const [showDisclaimerNotice, setShowDisclaimerNotice] = useState(true);
+  const canUseApp = !showDisclaimerNotice;
 
   // Use useEffect to handle logic that depends on window/localStorage to avoid hydration mismatch
   React.useEffect(() => {
-    try {
-      const agreed = localStorage.getItem(DISCLAIMER_AGREED_KEY) === 'true';
-      setShowDisclaimerNotice(!agreed);
-    } catch {
-      setShowDisclaimerNotice(true);
-    }
+    const timeoutId = window.setTimeout(() => {
+      try {
+        const agreed = localStorage.getItem(DISCLAIMER_AGREED_KEY) === 'true';
+        setShowDisclaimerNotice(!agreed);
+      } catch {
+        setShowDisclaimerNotice(true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const handleAcceptDisclaimer = () => {
@@ -40,6 +45,7 @@ export default function WorkoutTimer() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="在 GitHub 上查看源码"
+        tabIndex={canUseApp ? 0 : -1}
         className="fixed top-4 right-4 z-50 p-2 rounded-md text-gray-700 dark:text-gray-100 bg-white/80 dark:bg-zinc-900/60 shadow hover:scale-105 transition-transform"
       >
         <svg
@@ -67,6 +73,7 @@ export default function WorkoutTimer() {
               aria-selected={mode === 'workout'}
               aria-controls="tabpanel-workout"
               id="tab-workout"
+              disabled={!canUseApp}
               onClick={() => setMode('workout')}
               className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${mode === 'workout' ? 'bg-white dark:bg-zinc-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
             >
@@ -77,6 +84,7 @@ export default function WorkoutTimer() {
               aria-selected={mode === 'periodic'}
               aria-controls="tabpanel-periodic"
               id="tab-periodic"
+              disabled={!canUseApp}
               onClick={() => setMode('periodic')}
               className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${mode === 'periodic' ? 'bg-white dark:bg-zinc-800 shadow-sm text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
             >
@@ -84,52 +92,62 @@ export default function WorkoutTimer() {
             </button>
           </div>
         </nav>
+      </header>
 
-        {showDisclaimerNotice ? (
-          <div
-            className="legal-notice-banner"
-            role="note"
-            aria-label="免责声明提示"
+      {/* Content */}
+      <main className="flex-1 overflow-hidden px-5 pb-32 pt-2">
+        {canUseApp ? (
+          <>
+            <div
+              id="tabpanel-workout"
+              role="tabpanel"
+              aria-labelledby="tab-workout"
+              hidden={mode !== 'workout'}
+              className={mode === 'workout' ? 'h-full' : ''}
+            >
+              {mode === 'workout' && <WorkoutTab />}
+            </div>
+            <div
+              id="tabpanel-periodic"
+              role="tabpanel"
+              aria-labelledby="tab-periodic"
+              hidden={mode !== 'periodic'}
+              className={mode === 'periodic' ? 'h-full' : ''}
+            >
+              {mode === 'periodic' && <PeriodicTab />}
+            </div>
+          </>
+        ) : null}
+      </main>
+
+      {showDisclaimerNotice ? (
+        <div className="legal-modal-backdrop">
+          <section
+            className="legal-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="legal-modal-title"
+            aria-describedby="legal-modal-description"
           >
-            <p>
+            <h2 id="legal-modal-title">使用前请确认免责声明</h2>
+            <p id="legal-modal-description">
               继续使用本应用，即表示你已阅读并同意
               <Link href="/disclaimer" className="legal-notice-link">
                 《免责声明与使用条款》
               </Link>
-              。
+              。不同意时，请关闭本页面。
             </p>
             <button
               type="button"
               className="legal-notice-dismiss"
               onClick={handleAcceptDisclaimer}
+              autoFocus
             >
-              同意并关闭
+              我已阅读并同意
             </button>
-          </div>
-        ) : null}
-      </header>
-
-      {/* Content */}
-      <main className="flex-1 overflow-hidden px-5 pb-32 pt-2">
-        <div
-          id="tabpanel-workout"
-          role="tabpanel"
-          aria-labelledby="tab-workout"
-          hidden={mode !== 'workout'}
-          className={mode === 'workout' ? 'h-full' : ''}
-        >
-          {mode === 'workout' && <WorkoutTab />}
+          </section>
         </div>
-        <div
-          id="tabpanel-periodic"
-          role="tabpanel"
-          aria-labelledby="tab-periodic"
-          hidden={mode !== 'periodic'}
-          className={mode === 'periodic' ? 'h-full' : ''}
-        >
-          {mode === 'periodic' && <PeriodicTab />}
-        </div>
-      </main>
+      ) : null}
     </div>
   );
 }

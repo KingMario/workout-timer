@@ -21,17 +21,96 @@ type ScreenWithGetByTitle = typeof screen & {
   screen.getByRole('button', { name: new RegExp(t) });
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 const mockCancel = window.speechSynthesis.cancel as unknown as Mock;
+const mockAudioSources: string[] = [];
+const mockAudioInstances: AudioMock[] = [];
+let mockAudioMode: 'error' | 'play-success' = 'error';
+let mockDingStartCount = 0;
+
+class AudioContextMock {
+  state = 'running';
+  currentTime = 0;
+  destination = {};
+  resume = vi.fn().mockResolvedValue(undefined);
+  createBuffer = vi.fn(() => ({}));
+  createBufferSource = vi.fn(() => ({
+    buffer: null,
+    connect: vi.fn(),
+    start: vi.fn(),
+  }));
+  createOscillator = vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    start: vi.fn(() => {
+      mockDingStartCount += 1;
+    }),
+    stop: vi.fn(),
+    type: '',
+    frequency: { setValueAtTime: vi.fn() },
+  }));
+  createGain = vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    gain: {
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
+  }));
+}
+
+class AudioMock {
+  src: string;
+  listeners = new Map<string, () => void>();
+  play = vi.fn().mockResolvedValue(undefined);
+  pause = vi.fn();
+
+  constructor(src: string) {
+    this.src = src;
+    mockAudioSources.push(src);
+    mockAudioInstances.push(this);
+  }
+
+  addEventListener(event: string, callback: () => void) {
+    this.listeners.set(event, callback);
+    if (event === 'error') {
+      if (mockAudioMode === 'error') {
+        queueMicrotask(callback);
+      }
+    }
+  }
+
+  removeEventListener(event: string) {
+    this.listeners.delete(event);
+  }
+
+  finish() {
+    this.listeners.get('ended')?.();
+  }
+}
 
 describe('WorkoutTab', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockSpeak.mockClear();
     mockCancel.mockClear();
+    mockAudioSources.length = 0;
+    mockAudioInstances.length = 0;
+    mockDingStartCount = 0;
+    mockAudioMode = 'error';
+    vi.stubGlobal('Audio', AudioMock);
+    const audioWindow = window as unknown as {
+      AudioContext: typeof AudioContext;
+      webkitAudioContext: typeof AudioContext;
+    };
+    audioWindow.AudioContext =
+      AudioContextMock as unknown as typeof AudioContext;
+    audioWindow.webkitAudioContext =
+      AudioContextMock as unknown as typeof AudioContext;
     // Reset implementations to default (empty mock)
     mockSpeak.mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     // Flush any pending timers inside React's act() to avoid
     // "not wrapped in act(...)" warnings from state updates
     act(() => {
@@ -41,18 +120,85 @@ describe('WorkoutTab', () => {
   });
 
   // Helper to trigger speech completion
-  const finishSpeech = () => {
-    const calls = mockSpeak.mock.calls;
-    if (calls.length > 0) {
-      const lastCall = calls[calls.length - 1];
-      const utterance = lastCall[0];
+  const finishSpeech = async () => {
+    let index = 0;
+    while (index < mockSpeak.mock.calls.length) {
+      const utterance = mockSpeak.mock.calls[index][0];
       if (utterance.onend) {
         act(() => {
           utterance.onend(new Event('end'));
         });
       }
+      index += 1;
+      await act(async () => {});
     }
   };
+
+  const finishInitialRecordedSpeech = async () => {
+    const startIndex = mockAudioInstances.length - 1;
+    await act(async () => {
+      mockAudioInstances[startIndex]?.finish();
+    });
+    await act(async () => {
+      mockAudioInstances[startIndex + 1]?.finish();
+    });
+    await act(async () => {
+      mockAudioInstances[startIndex + 2]?.finish();
+    });
+  };
+
+  it('uses recorded audio without falling back to browser speech synthesis', async () => {
+    mockAudioMode = 'play-success';
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalled();
+    expect(mockSpeak).not.toHaveBeenCalled();
+    expect(mockAudioSources[0]).toMatch(
+      /audio\/built-in-plans\/yunxi\/planA-s1\.mp3$/,
+    );
+
+    await act(async () => {});
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(mockSpeak).not.toHaveBeenCalled();
+
+    await act(async () => {
+      mockAudioInstances[0]?.finish();
+    });
+
+    expect(mockAudioInstances[1]?.play).toHaveBeenCalled();
+    expect(mockAudioSources[1]).toMatch(
+      /audio\/built-in-plans\/yunxi\/planA-s1-e1-name\.mp3$/,
+    );
+    expect(mockSpeak).not.toHaveBeenCalled();
+
+    await act(async () => {
+      mockAudioInstances[1]?.finish();
+    });
+
+    expect(mockAudioInstances[2]?.play).toHaveBeenCalled();
+    expect(mockAudioSources[2]).toMatch(
+      /audio\/built-in-plans\/yunxi\/planA-s1-e1\.mp3$/,
+    );
+    expect(mockSpeak).not.toHaveBeenCalled();
+
+    await act(async () => {
+      mockAudioInstances[2]?.finish();
+    });
+
+    expect(mockDingStartCount).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
+  });
 
   it('renders initial state correctly', async () => {
     await act(async () => {
@@ -77,6 +223,11 @@ describe('WorkoutTab', () => {
       fireEvent.click(toggleButton);
     });
     expect(mockSpeak).toHaveBeenCalled(); // Speaks first item
+    expect(
+      mockAudioSources.some((source) =>
+        source.endsWith('audio/built-in-plans/yunxi/planA-s1.mp3'),
+      ),
+    ).toBe(true);
 
     // Check if icon changed to pause (aria-label becomes '暂停')
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
@@ -103,7 +254,7 @@ describe('WorkoutTab', () => {
     });
 
     // Finish initial speech to start timer
-    finishSpeech();
+    await finishSpeech();
 
     mockSpeak.mockClear(); // Clear the initial speak call
 
@@ -126,13 +277,15 @@ describe('WorkoutTab', () => {
   });
 
   it('resets the timer', async () => {
+    mockAudioMode = 'play-success';
+
     await act(async () => {
       render(<WorkoutTab />);
     });
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
-    finishSpeech();
+    await finishInitialRecordedSpeech();
 
     await act(async () => {
       vi.advanceTimersByTime(5000);
@@ -187,9 +340,56 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
+    expect(
+      mockAudioSources.some((source) =>
+        source.endsWith('audio/built-in-plans/yunxi/planA-s1-e2-name.mp3'),
+      ),
+    ).toBe(true);
     expect(mockSpeak).toHaveBeenCalledWith(
       expect.objectContaining({ text: expect.stringContaining('肩部时钟') }),
     );
+  });
+
+  it('cancels the current recorded audio queue when jumping to another step', async () => {
+    mockAudioMode = 'play-success';
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('开始'));
+    });
+
+    const firstAudio = mockAudioInstances[0];
+    expect(firstAudio.src).toMatch(/planA-s1\.mp3$/);
+
+    await act(async () => {});
+
+    const step2Name = screen
+      .getAllByText('肩部时钟')
+      .find(
+        (el) => el.tagName === 'SPAN' && el.className.includes('font-medium'),
+      );
+
+    await act(async () => {
+      fireEvent.click(step2Name ?? screen.getAllByText('肩部时钟')[0]);
+    });
+
+    expect(firstAudio.pause).toHaveBeenCalled();
+    expect(mockAudioSources.at(-1)).toMatch(/planA-s1-e2-name\.mp3$/);
+
+    await act(async () => {
+      firstAudio.finish();
+    });
+
+    expect(
+      mockAudioSources.some((source) =>
+        source.endsWith('planA-s1-e1-name.mp3'),
+      ),
+    ).toBe(false);
+    expect(mockDingStartCount).toBe(0);
+    expect(screen.getAllByText('肩部时钟').length).toBeGreaterThan(0);
   });
 
   it('manual jump pauses timer until speech ends', async () => {
@@ -201,7 +401,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
-    finishSpeech();
+    await finishSpeech();
 
     // Advance 2s to let timer decrement
     await act(async () => {
@@ -238,7 +438,7 @@ describe('WorkoutTab', () => {
     expect(during).toBe(afterClick);
 
     // Finish speech and advance, timer should resume
-    finishSpeech();
+    await finishSpeech();
     await act(async () => {
       vi.advanceTimersByTime(2000);
     });
@@ -256,7 +456,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(screen.getByTitle('开始'));
     });
-    finishSpeech();
+    await finishSpeech();
 
     // Fast forward to the end of the first item (60s)
     await act(async () => {
@@ -285,7 +485,7 @@ describe('WorkoutTab', () => {
     expect(during).toBe(before);
 
     // Finish speech and then timer should resume
-    finishSpeech();
+    await finishSpeech();
     await act(async () => {
       vi.advanceTimersByTime(2000);
     });
@@ -321,7 +521,7 @@ describe('WorkoutTab', () => {
     });
 
     // Finish initial speech
-    finishSpeech();
+    await finishSpeech();
 
     // Finish duration (30s)
     await act(async () => {
@@ -337,6 +537,8 @@ describe('WorkoutTab', () => {
   });
 
   it('supports keyboard shortcuts (Space to toggle, Esc to reset)', async () => {
+    mockAudioMode = 'play-success';
+
     await act(async () => {
       render(<WorkoutTab />);
     });
@@ -346,9 +548,11 @@ describe('WorkoutTab', () => {
       fireEvent.keyDown(window, { code: 'Space' });
     });
     expect(screen.getByTitle('暂停')).toBeInTheDocument();
-    expect(mockSpeak).toHaveBeenCalled();
+    expect(mockAudioSources[0]).toMatch(
+      /audio\/built-in-plans\/yunxi\/planA-s1\.mp3$/,
+    );
 
-    finishSpeech();
+    await finishInitialRecordedSpeech();
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
@@ -363,7 +567,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.keyDown(window, { code: 'Space' });
     });
-    finishSpeech();
+    await finishInitialRecordedSpeech();
     // Advance enough to move to next step or deplete timer
     await act(async () => {
       vi.advanceTimersByTime(5000);

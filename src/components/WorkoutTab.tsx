@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import useAudio from '../hooks/useAudio';
+import useAudio, { type SpeechSegment } from '../hooks/useAudio';
 import { DEFAULT_PLAN } from '../schemas/default-plan';
 import type { WorkoutPlan } from '../schemas/workout-plan';
 import { getActivePlan, saveActivePlan } from '../utils/storage';
@@ -18,6 +18,9 @@ interface Step {
   desc: string;
   duration: number;
   section: string;
+  sectionAudio?: string;
+  nameAudio?: string;
+  audio?: string;
 }
 
 type Section = WorkoutPlan[number];
@@ -68,7 +71,12 @@ export default function WorkoutTab() {
         : 1;
       for (let i = 0; i < rounds; i++) {
         newSteps = newSteps.concat(
-          section.steps.map((s) => ({ ...s, section: section.name })),
+          section.steps.map((s, stepIndex) => ({
+            ...s,
+            section: section.name,
+            sectionAudio:
+              i === 0 && stepIndex === 0 ? section.audio : undefined,
+          })),
         );
       }
     });
@@ -80,27 +88,9 @@ export default function WorkoutTab() {
     stepsRef.current = steps;
   }, [steps]);
 
-  useEffect(() => {
-    setIsMounted(true);
-    const active = getActivePlan();
-    if (active) {
-      setPlanSections(active.plan);
-    }
-  }, []);
-
-  useEffect(() => {
-    const initial: Record<string, number> = {};
-    planSections.forEach((s) => {
-      initial[s.name] = s.defaultRounds;
-    });
-    setSectionRounds(initial);
-    // reset when plan changes
-    handleReset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planSections]);
   const {
     unlockAudio,
-    speak,
+    speakSegments,
     scheduleSpeak,
     playDoubleDing,
     cancelAll,
@@ -108,6 +98,31 @@ export default function WorkoutTab() {
     disableNoSleep,
     isSpeaking,
   } = useAudio(ttsEnabled);
+
+  const getStepSpeechSegments = useCallback((step: Step): SpeechSegment[] => {
+    const segments: SpeechSegment[] = [];
+
+    if (step.sectionAudio) {
+      segments.push({
+        text: `${step.section}阶段`,
+        audio: step.sectionAudio,
+      });
+    }
+
+    segments.push({
+      text: step.name,
+      audio: step.nameAudio || (!step.desc ? step.audio : undefined),
+    });
+
+    if (step.desc) {
+      segments.push({
+        text: step.desc,
+        audio: step.audio,
+      });
+    }
+
+    return segments;
+  }, []);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
@@ -127,7 +142,7 @@ export default function WorkoutTab() {
       if (isRunning) {
         playDoubleDing();
         if (ttsEnabled) {
-          scheduleSpeak(`${steps[nextIdx].name}。${steps[nextIdx].desc}`, 1000);
+          scheduleSpeak(getStepSpeechSegments(steps[nextIdx]), 1000);
         } else {
           scheduleSpeak('', 1000);
         }
@@ -145,8 +160,30 @@ export default function WorkoutTab() {
     playDoubleDing,
     ttsEnabled,
     scheduleSpeak,
+    getStepSpeechSegments,
     disableNoSleep,
   ]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+    const active = getActivePlan();
+    if (active) {
+      setPlanSections(active.plan);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initial: Record<string, number> = {};
+    planSections.forEach((s) => {
+      initial[s.name] = s.defaultRounds;
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSectionRounds(initial);
+    // reset when plan changes
+    handleReset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planSections]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0 && !isSpeaking) {
@@ -154,6 +191,7 @@ export default function WorkoutTab() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isRunning && !isSpeaking) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleNextStep();
     }
     return () => {
@@ -169,6 +207,7 @@ export default function WorkoutTab() {
       currentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentIdx]);
+
   const togglePlay = useCallback(() => {
     unlockAudio();
     if (!isRunning) {
@@ -178,8 +217,7 @@ export default function WorkoutTab() {
       }
       setIsRunning(true);
       enableNoSleep();
-      // speak() updates hook speaking state internally
-      speak(`${steps[currentIdx].name}。${steps[currentIdx].desc}`);
+      speakSegments(getStepSpeechSegments(steps[currentIdx]));
     } else {
       setIsRunning(false);
       cancelAll();
@@ -189,11 +227,12 @@ export default function WorkoutTab() {
     isRunning,
     isFinished,
     handleReset,
-    speak,
+    speakSegments,
     steps,
     currentIdx,
     enableNoSleep,
     cancelAll,
+    getStepSpeechSegments,
   ]);
 
   useEffect(() => {
@@ -230,7 +269,7 @@ export default function WorkoutTab() {
     setCurrentIdx(idx);
     setTimeLeft(steps[idx].duration);
     if (isRunning) {
-      speak(`${steps[idx].name}。${steps[idx].desc}`);
+      speakSegments(getStepSpeechSegments(steps[idx]));
     }
   };
 

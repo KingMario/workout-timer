@@ -1,22 +1,37 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import WorkoutTimer from './page';
 
 describe('WorkoutTimer page', () => {
-  it('shows disclaimer notice by default and hides it after agreement', async () => {
+  it('blocks app usage with the disclaimer dialog until agreement', async () => {
     localStorage.clear();
 
     await act(async () => {
       render(<WorkoutTimer />);
     });
 
-    expect(screen.getByText('同意并关闭')).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: '使用前请确认免责声明' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('我已阅读并同意')).toBeInTheDocument();
+    expect(
+      screen.queryByText('💪 灵动健身 (FlexWorkout)'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('专注锻炼')).toBeDisabled();
+    expect(screen.getByText('间歇拉伸')).toBeDisabled();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('同意并关闭'));
+      fireEvent.click(screen.getByText('我已阅读并同意'));
     });
 
-    expect(screen.queryByText('同意并关闭')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('💪 灵动健身 (FlexWorkout)')).toBeInTheDocument();
     expect(localStorage.getItem('disclaimerAgreed')).toBe('true');
     expect(localStorage.getItem('disclaimerAgreedAt')).not.toBeNull();
   });
@@ -28,11 +43,13 @@ describe('WorkoutTimer page', () => {
       render(<WorkoutTimer />);
     });
 
-    expect(screen.queryByText('同意并关闭')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   it('renders workout mode by default', async () => {
-    localStorage.clear();
+    localStorage.setItem('disclaimerAgreed', 'true');
 
     await act(async () => {
       render(<WorkoutTimer />);
@@ -43,23 +60,27 @@ describe('WorkoutTimer page', () => {
     expect(screen.getByText('间歇拉伸')).toBeInTheDocument();
 
     // Default content comes from WorkoutTab
-    expect(screen.getByText('💪 灵动健身 (FlexWorkout)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('💪 灵动健身 (FlexWorkout)'),
+    ).toBeInTheDocument();
   });
 
   it('switches to periodic mode when tab is clicked', async () => {
-    localStorage.clear();
+    localStorage.setItem('disclaimerAgreed', 'true');
 
     await act(async () => {
       render(<WorkoutTimer />);
     });
 
-    const periodicTab = screen.getByText('间歇拉伸');
+    await screen.findByText('💪 灵动健身 (FlexWorkout)');
+
+    const periodicTab = screen.getByRole('tab', { name: '间歇拉伸' });
 
     await act(async () => {
       fireEvent.click(periodicTab);
     });
 
     // Header from PeriodicTab should be visible
-    expect(screen.getByText('⏰ 办公间歇拉伸')).toBeInTheDocument();
+    expect(await screen.findByText('⏰ 办公间歇拉伸')).toBeInTheDocument();
   });
 });

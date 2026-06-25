@@ -3,12 +3,62 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import NoSleep from 'nosleep.js';
 
+const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
+
+const resolveAudioPath = (filePath: string) => {
+  if (ABSOLUTE_URL_PATTERN.test(filePath) || typeof window === 'undefined') {
+    return filePath;
+  }
+
+  const nextScript = Array.from(document.scripts).find((script) =>
+    script.src.includes('/_next/'),
+  );
+  if (nextScript) {
+    const nextIndex = nextScript.src.indexOf('/_next/');
+    if (nextIndex > -1) {
+      return `${nextScript.src.slice(0, nextIndex)}/${filePath}`;
+    }
+  }
+
+  const [basePath = ''] = window.location.pathname.split('/').filter(Boolean);
+  const pathPrefix = basePath ? `/${basePath}` : '';
+  return `${window.location.origin}${pathPrefix}/${filePath}`;
+};
+
+export interface SpeechSegment {
+  text: string;
+  audio?: string | string[];
+}
+
 export function useAudio(ttsEnabled = true) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const speakTimeoutRef = useRef<number | null>(null);
   const dingTimeoutRef = useRef<number | null>(null);
   const noSleepRef = useRef<NoSleep | null>(null);
+  const playbackIdRef = useRef(0);
+  const currentAudioCancelRef = useRef<(() => void) | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const cancelCurrentAudio = useCallback(() => {
+    if (currentAudioCancelRef.current) {
+      currentAudioCancelRef.current();
+      currentAudioCancelRef.current = null;
+    }
+  }, []);
+
+  const beginPlayback = useCallback(() => {
+    playbackIdRef.current += 1;
+    cancelCurrentAudio();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    return playbackIdRef.current;
+  }, [cancelCurrentAudio]);
+
+  const isCurrentPlayback = useCallback(
+    (playbackId: number) => playbackIdRef.current === playbackId,
+    [],
+  );
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -28,11 +78,13 @@ export function useAudio(ttsEnabled = true) {
           noSleepRef.current.disable();
         } catch {}
       }
+      playbackIdRef.current += 1;
+      cancelCurrentAudio();
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     };
-  }, []);
+  }, [cancelCurrentAudio]);
 
   const initAudio = useCallback(() => {
     if (typeof window === 'undefined' || audioCtxRef.current) {
@@ -110,46 +162,239 @@ export function useAudio(ttsEnabled = true) {
     }
   }, [initAudio]);
 
-  const speak = useCallback(
-    (text: string, onEnd?: () => void) => {
-      if (
-        !ttsEnabled ||
-        typeof window === 'undefined' ||
-        !window.speechSynthesis
-      ) {
+  const tryPlayFile = useCallback(
+    async (
+      filePath: string,
+      playbackId: number,
+    ): Promise<'played' | 'failed' | 'cancelled'> => {
+      return new Promise((resolve) => {
+        if (!isCurrentPlayback(playbackId)) {
+          resolve('cancelled');
+          return;
+        }
+
+        const resolvedPath = resolveAudioPath(filePath);
+        const audio = new Audio(resolvedPath);
+        let settled = false;
+        let timeoutId: number | null = null;
+
+        const onEnded = () => {
+          cleanup();
+          resolve(isCurrentPlayback(playbackId) ? 'played' : 'cancelled');
+        };
+
+        const onError = () => {
+          cleanup();
+          resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
+        };
+
+        const cleanup = () => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+          }
+          audio.removeEventListener('ended', onEnded);
+          audio.removeEventListener('error', onError);
+          if (currentAudioCancelRef.current === cancelAudio) {
+            currentAudioCancelRef.current = null;
+          }
+        };
+
+        const cancelAudio = () => {
+          cleanup();
+          try {
+            audio.pause();
+            audio.currentTime = 0;
+          } catch {}
+          resolve('cancelled');
+        };
+
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+        currentAudioCancelRef.current = cancelAudio;
+
+        timeoutId = window.setTimeout(() => {
+          cleanup();
+          resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
+        }, 2000);
+
+        audio
+          .play()
+          .then(() => {
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+          })
+          .catch((e) => {
+            console.warn(`Failed to play audio file ${resolvedPath}:`, e);
+            cleanup();
+            resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
+          });
+      });
+    },
+    [isCurrentPlayback],
+  );
+
+  const tryPlayFiles = useCallback(
+    async (
+      filePaths: string[],
+      playbackId: number,
+    ): Promise<'played' | 'failed' | 'cancelled'> => {
+      if (filePaths.length === 0) {
+        return 'failed';
+      }
+
+      for (const filePath of filePaths) {
+        const status = await tryPlayFile(filePath, playbackId);
+        if (status !== 'played') {
+          return status;
+        }
+      }
+
+      return 'played';
+    },
+    [tryPlayFile],
+  );
+
+  // Function to play a pre-recorded MP3 file if available
+  const playRecordedAudio = useCallback(
+    async (
+      audioPath: string | string[] | undefined,
+      playbackId: number,
+    ): Promise<'played' | 'failed' | 'cancelled'> => {
+      if (typeof window === 'undefined') {
+        return 'failed';
+      }
+
+      try {
+        if (audioPath) {
+          const audioPaths = Array.isArray(audioPath) ? audioPath : [audioPath];
+          return tryPlayFiles(audioPaths.filter(Boolean), playbackId);
+        }
+
+        return 'failed';
+      } catch (e) {
+        console.warn('Error in playRecordedAudio:', e);
+        return isCurrentPlayback(playbackId) ? 'failed' : 'cancelled';
+      }
+    },
+    [isCurrentPlayback, tryPlayFiles],
+  );
+
+  const speakText = useCallback(async (text: string) => {
+    if (!text || typeof window === 'undefined' || !window.speechSynthesis) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'zh-CN';
+      msg.onend = () => resolve();
+      msg.onerror = () => resolve();
+      window.speechSynthesis.speak(msg);
+    });
+  }, []);
+
+  const speakSegments = useCallback(
+    async (segments: SpeechSegment[], onEnd?: () => void) => {
+      if (!ttsEnabled || typeof window === 'undefined') {
+        beginPlayback();
         setIsSpeaking(false);
         if (onEnd) {
           onEnd();
         }
         return;
       }
-      // cancel pending and schedule immediately
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+
+      const playableSegments = segments.filter(
+        (segment) => segment.text || segment.audio,
+      );
+      if (playableSegments.length === 0) {
+        setIsSpeaking(false);
+        if (onEnd) {
+          onEnd();
+        }
+        return;
       }
+
+      const playbackId = beginPlayback();
       setIsSpeaking(true);
-      const msg = new SpeechSynthesisUtterance(text);
-      msg.lang = 'zh-CN';
-      msg.onend = () => {
-        setIsSpeaking(false);
-        playDing();
-        if (onEnd) {
-          onEnd();
+      for (const segment of playableSegments) {
+        if (!isCurrentPlayback(playbackId)) {
+          return;
         }
-      };
-      msg.onerror = () => {
-        setIsSpeaking(false);
-        if (onEnd) {
-          onEnd();
+
+        const audioStatus = await playRecordedAudio(segment.audio, playbackId);
+        if (audioStatus === 'cancelled' || !isCurrentPlayback(playbackId)) {
+          return;
         }
-      };
-      window.speechSynthesis.speak(msg);
+
+        if (audioStatus === 'failed') {
+          await speakText(segment.text);
+          if (!isCurrentPlayback(playbackId)) {
+            return;
+          }
+        }
+      }
+      setIsSpeaking(false);
+      playDing();
+      if (onEnd) {
+        setTimeout(() => onEnd(), 300);
+      }
     },
-    [playDing, ttsEnabled],
+    [
+      beginPlayback,
+      isCurrentPlayback,
+      playDing,
+      playRecordedAudio,
+      speakText,
+      ttsEnabled,
+    ],
+  );
+
+  const speak = useCallback(
+    async (
+      text: string,
+      audioPathOrOnEnd?: string | string[] | (() => void),
+      onEnd?: () => void,
+    ) => {
+      let actualAudioPath: string | string[] | undefined;
+      let actualOnEnd = onEnd;
+
+      if (typeof audioPathOrOnEnd === 'function') {
+        actualOnEnd = audioPathOrOnEnd;
+        actualAudioPath = undefined;
+      } else {
+        actualAudioPath = audioPathOrOnEnd;
+      }
+
+      await speakSegments([{ text, audio: actualAudioPath }], actualOnEnd);
+    },
+    [speakSegments],
   );
 
   const scheduleSpeak = useCallback(
-    (text: string, delay = 1000, onEnd?: () => void) => {
+    (
+      textOrSegments: string | SpeechSegment[],
+      delayOrAudioPath: number | string | string[] = 1000,
+      onEnd?: () => void,
+    ) => {
+      let delay = 1000;
+      let audioPath: string | string[] | undefined;
+
+      if (
+        typeof delayOrAudioPath === 'string' ||
+        Array.isArray(delayOrAudioPath)
+      ) {
+        audioPath = delayOrAudioPath;
+      } else {
+        delay = delayOrAudioPath;
+      }
+
       // if there is a pending scheduled speak, cancel it and clear speaking state
       if (speakTimeoutRef.current) {
         clearTimeout(speakTimeoutRef.current);
@@ -159,11 +404,15 @@ export function useAudio(ttsEnabled = true) {
       // mark as speaking immediately so callers (timers) can pause while waiting
       setIsSpeaking(true);
       speakTimeoutRef.current = window.setTimeout(() => {
-        speak(text, onEnd);
+        if (Array.isArray(textOrSegments)) {
+          speakSegments(textOrSegments, onEnd);
+        } else {
+          speak(textOrSegments, audioPath, onEnd);
+        }
         speakTimeoutRef.current = null;
       }, delay);
     },
-    [speak],
+    [speak, speakSegments],
   );
 
   const playDoubleDing = useCallback(() => {
@@ -179,6 +428,8 @@ export function useAudio(ttsEnabled = true) {
   }, [playDing]);
 
   const cancelAll = useCallback(() => {
+    playbackIdRef.current += 1;
+    cancelCurrentAudio();
     if (speakTimeoutRef.current) {
       clearTimeout(speakTimeoutRef.current);
       speakTimeoutRef.current = null;
@@ -191,7 +442,7 @@ export function useAudio(ttsEnabled = true) {
       window.speechSynthesis.cancel();
     }
     setIsSpeaking(false);
-  }, []);
+  }, [cancelCurrentAudio]);
 
   const enableNoSleep = useCallback(() => {
     if (noSleepRef.current) {
@@ -210,6 +461,7 @@ export function useAudio(ttsEnabled = true) {
     unlockAudio,
     playDing,
     speak,
+    speakSegments,
     scheduleSpeak,
     playDoubleDing,
     cancelAll,

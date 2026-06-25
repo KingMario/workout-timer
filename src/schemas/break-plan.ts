@@ -1,6 +1,7 @@
+import { withBuiltInPlanAudio } from './built-in-plan-audio';
 import type { WorkoutPlan } from './workout-plan';
 
-export const BREAK_PLAN: WorkoutPlan = [
+const RAW_BREAK_PLAN: WorkoutPlan = [
   {
     name: '工位坐姿放松 (Seated)',
     tips: '适合在办公桌前快速进行，缓解久坐带来的颈肩腰背压力。',
@@ -160,3 +161,5 @@ export const BREAK_PLAN: WorkoutPlan = [
     ],
   },
 ];
+
+export const BREAK_PLAN = withBuiltInPlanAudio('planC', RAW_BREAK_PLAN);

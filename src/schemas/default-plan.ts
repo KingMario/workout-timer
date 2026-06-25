@@ -1,6 +1,7 @@
+import { withBuiltInPlanAudio } from './built-in-plan-audio';
 import type { WorkoutPlan } from './workout-plan';
 
-export const DEFAULT_PLAN: WorkoutPlan = [
+const RAW_DEFAULT_PLAN: WorkoutPlan = [
   {
     name: '热身',
     tips: '唤醒身体，润滑关节，为运动做好准备。全程保持自然呼吸。',
@@ -44,7 +45,7 @@ export const DEFAULT_PLAN: WorkoutPlan = [
     steps: [
       {
         name: '靠墙天使',
-        desc: '背靠墙站立，头、上背、臀部贴墙。手臂呈“达不溜”形贴墙，缓慢上举至向上“八”字形，再下放。感受肩胛骨的活动。',
+        desc: '背靠墙站立，头、上背、臀部贴墙。手臂呈“W”形贴墙，缓慢上举至“Y”形，再下放。感受肩胛骨的活动。',
         duration: 45,
       },
       { name: '休息', desc: '', duration: 15 },
@@ -120,3 +121,5 @@ export const DEFAULT_PLAN: WorkoutPlan = [
     ],
   },
 ];
+
+export const DEFAULT_PLAN = withBuiltInPlanAudio('planA', RAW_DEFAULT_PLAN);

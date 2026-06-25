@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import useAudio from '../hooks/useAudio';
+import useAudio, { type SpeechSegment } from '../hooks/useAudio';
 import { BREAK_PLAN } from '../schemas/break-plan';
+import { getBuiltInAudioAssetPath } from '../schemas/built-in-plan-audio';
 import type { WorkoutPlan } from '../schemas/workout-plan';
+
+const PERIODIC_ENABLED_AUDIO = getBuiltInAudioAssetPath('periodic-enabled.mp3');
+const PERIODIC_BREAK_START_AUDIO = getBuiltInAudioAssetPath(
+  'periodic-break-start.mp3',
+);
+const PERIODIC_BREAK_END_AUDIO = getBuiltInAudioAssetPath(
+  'periodic-break-end.mp3',
+);
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArr = [...array];
@@ -12,6 +21,29 @@ const shuffleArray = <T,>(array: T[]): T[] => {
     [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
   }
   return newArr;
+};
+
+const getBreakStepSpeechSegments = (
+  step: WorkoutPlan[number]['steps'][number] | undefined,
+  prefix?: SpeechSegment,
+): SpeechSegment[] => {
+  const segments: SpeechSegment[] = [];
+
+  if (prefix) {
+    segments.push(prefix);
+  }
+
+  if (!step) {
+    return segments;
+  }
+
+  segments.push({ text: step.name, audio: step.nameAudio ?? step.audio });
+
+  if (step.desc) {
+    segments.push({ text: step.desc, audio: step.audio });
+  }
+
+  return segments;
 };
 
 interface PeriodicTabProps {
@@ -64,6 +96,7 @@ export default function PeriodicTab({
     initAudio,
     unlockAudio,
     speak,
+    speakSegments,
     scheduleSpeak,
     playDoubleDing,
     cancelAll,
@@ -85,14 +118,14 @@ export default function PeriodicTab({
       setBreakStepTimeLeft(30);
       playDoubleDing();
       scheduleSpeak(
-        `${activeBreakSteps[nextIdx].name}。${activeBreakSteps[nextIdx].desc}`,
+        getBreakStepSpeechSegments(activeBreakSteps[nextIdx]),
         1000,
       );
     } else {
       setIsBreakActive(false);
       setActiveBreakSteps([]);
       setPeriodicTimeLeft(periodicInterval * 60);
-      speak('休息结束，继续工作吧。');
+      speak('休息结束，继续工作吧。', PERIODIC_BREAK_END_AUDIO);
     }
   }, [
     activeBreakIdx,
@@ -115,11 +148,13 @@ export default function PeriodicTab({
       const next = prev.slice(3);
       return [...next, ...toSuggest];
     });
-    const message = toSuggest[0]
-      ? `休息时间到了。第一个动作：${toSuggest[0].name}。${toSuggest[0].desc}`
-      : '休息时间到了。';
-    speak(message);
-  }, [shuffledStretches, speak, playDoubleDing]);
+    speakSegments(
+      getBreakStepSpeechSegments(toSuggest[0], {
+        text: toSuggest[0] ? '休息时间到了。第一个动作：' : '休息时间到了。',
+        audio: PERIODIC_BREAK_START_AUDIO,
+      }),
+    );
+  }, [shuffledStretches, speakSegments, playDoubleDing]);
 
   useEffect(() => {
     if (isPeriodicRunning && !isBreakActive && periodicTimeLeft > 0) {
@@ -190,7 +225,7 @@ export default function PeriodicTab({
     if (!isPeriodicRunning) {
       setIsPeriodicRunning(true);
       enableNoSleep();
-      speak('间歇拉伸已开启。');
+      speak('间歇拉伸已开启。', PERIODIC_ENABLED_AUDIO);
     } else {
       setIsPeriodicRunning(false);
       setIsBreakActive(false);

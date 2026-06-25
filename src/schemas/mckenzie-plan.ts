@@ -1,6 +1,7 @@
+import { withBuiltInPlanAudio } from './built-in-plan-audio';
 import type { WorkoutPlan } from './workout-plan';
 
-export const MCKENZIE_PLAN: WorkoutPlan = [
+const RAW_MCKENZIE_PLAN: WorkoutPlan = [
   {
     name: '预备',
     tips: '麦肯基疗法预备阶段，放松腰椎，请用硬板床或瑜伽垫。',
@@ -49,3 +50,5 @@ export const MCKENZIE_PLAN: WorkoutPlan = [
     ],
   },
 ];
+
+export const MCKENZIE_PLAN = withBuiltInPlanAudio('planD', RAW_MCKENZIE_PLAN);
