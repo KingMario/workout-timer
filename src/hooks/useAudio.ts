@@ -32,6 +32,11 @@ export interface SpeechSegment {
   audio?: string | string[];
 }
 
+interface SpeechCallbacks {
+  onStart?: () => void;
+  onEnd?: () => void;
+}
+
 export function useAudio(ttsEnabled = true) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const speakTimeoutRef = useRef<number | null>(null);
@@ -369,7 +374,9 @@ export function useAudio(ttsEnabled = true) {
   }, []);
 
   const speakSegments = useCallback(
-    async (segments: SpeechSegment[], onEnd?: () => void) => {
+    async (segments: SpeechSegment[], callbacks: SpeechCallbacks = {}) => {
+      const { onStart, onEnd } = callbacks;
+
       if (!ttsEnabled || typeof window === 'undefined') {
         beginPlayback();
         setIsSpeaking(false);
@@ -392,6 +399,9 @@ export function useAudio(ttsEnabled = true) {
 
       const playbackId = beginPlayback();
       setIsSpeaking(true);
+      if (onStart) {
+        onStart();
+      }
       playableSegments.forEach((segment) => {
         if (segment.audio) {
           preloadRecordedAudio(segment.audio);
@@ -447,7 +457,9 @@ export function useAudio(ttsEnabled = true) {
         actualAudioPath = audioPathOrOnEnd;
       }
 
-      await speakSegments([{ text, audio: actualAudioPath }], actualOnEnd);
+      await speakSegments([{ text, audio: actualAudioPath }], {
+        onEnd: actualOnEnd,
+      });
     },
     [speakSegments],
   );
@@ -457,6 +469,7 @@ export function useAudio(ttsEnabled = true) {
       textOrSegments: string | SpeechSegment[],
       delayOrAudioPath: number | string | string[] = 1000,
       onEnd?: () => void,
+      onStart?: () => void,
     ) => {
       let delay = 1000;
       let audioPath: string | string[] | undefined;
@@ -480,7 +493,7 @@ export function useAudio(ttsEnabled = true) {
       setIsSpeaking(true);
       speakTimeoutRef.current = window.setTimeout(() => {
         if (Array.isArray(textOrSegments)) {
-          speakSegments(textOrSegments, onEnd);
+          speakSegments(textOrSegments, { onEnd, onStart });
         } else {
           speak(textOrSegments, audioPath, onEnd);
         }

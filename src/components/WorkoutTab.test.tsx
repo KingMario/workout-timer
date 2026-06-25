@@ -10,6 +10,18 @@ import {
 } from 'vitest';
 import WorkoutTab from './WorkoutTab';
 
+const { mockNoSleepEnable, mockNoSleepDisable } = vi.hoisted(() => ({
+  mockNoSleepEnable: vi.fn(),
+  mockNoSleepDisable: vi.fn(),
+}));
+
+vi.mock('nosleep.js', () => ({
+  default: class NoSleep {
+    enable = mockNoSleepEnable;
+    disable = mockNoSleepDisable;
+  },
+}));
+
 // Access the global mocks setup in vitest.setup.ts
 // Backwards-compat: some components switched from title->aria-label. Provide a small
 // compatibility helper so legacy tests using screen.getByTitle continue to work.
@@ -123,6 +135,8 @@ describe('WorkoutTab', () => {
     localStorage.clear();
     mockSpeak.mockClear();
     mockCancel.mockClear();
+    mockNoSleepEnable.mockClear();
+    mockNoSleepDisable.mockClear();
     mockAudioSources.length = 0;
     mockAudioInstances.length = 0;
     mockDingStartCount = 0;
@@ -230,6 +244,28 @@ describe('WorkoutTab', () => {
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
   });
 
+  it('pauses NoSleep while built-in recorded audio is playing', async () => {
+    mockAudioMode = 'play-success';
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    expect(mockNoSleepEnable).toHaveBeenCalledTimes(1);
+    expect(mockNoSleepDisable).toHaveBeenCalledTimes(1);
+
+    await finishInitialRecordedSpeech();
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(mockNoSleepEnable).toHaveBeenCalledTimes(2);
+  });
+
   it('does not use browser speech when built-in recorded audio times out', async () => {
     mockAudioMode = 'slow-start';
 
@@ -290,6 +326,8 @@ describe('WorkoutTab', () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       expect.objectContaining({ text: expect.stringContaining('自定义动作') }),
     );
+    expect(mockNoSleepEnable).toHaveBeenCalledTimes(1);
+    expect(mockNoSleepDisable).not.toHaveBeenCalled();
   });
 
   it('renders initial state correctly', async () => {

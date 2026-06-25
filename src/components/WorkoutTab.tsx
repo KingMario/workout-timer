@@ -39,6 +39,9 @@ const formatTime = (sec: number) => {
   return str;
 };
 
+const hasRecordedAudio = (segments: SpeechSegment[]) =>
+  segments.some((segment) => Boolean(segment.audio));
+
 export default function WorkoutTab() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [planSections, setPlanSections] = useState<Section[]>(DEFAULT_PLAN);
@@ -124,6 +127,37 @@ export default function WorkoutTab() {
     return segments;
   }, []);
 
+  const getSpeechNoSleepCallbacks = useCallback(
+    (segments: SpeechSegment[]) => {
+      if (!hasRecordedAudio(segments)) {
+        return {};
+      }
+
+      return {
+        onStart: disableNoSleep,
+        onEnd: enableNoSleep,
+      };
+    },
+    [disableNoSleep, enableNoSleep],
+  );
+
+  const speakStep = useCallback(
+    (step: Step) => {
+      const segments = getStepSpeechSegments(step);
+      speakSegments(segments, getSpeechNoSleepCallbacks(segments));
+    },
+    [getSpeechNoSleepCallbacks, getStepSpeechSegments, speakSegments],
+  );
+
+  const scheduleStepSpeech = useCallback(
+    (step: Step) => {
+      const segments = getStepSpeechSegments(step);
+      const callbacks = getSpeechNoSleepCallbacks(segments);
+      scheduleSpeak(segments, 1000, callbacks.onEnd, callbacks.onStart);
+    },
+    [getSpeechNoSleepCallbacks, getStepSpeechSegments, scheduleSpeak],
+  );
+
   const handleReset = useCallback(() => {
     setIsRunning(false);
     setIsFinished(false);
@@ -142,7 +176,7 @@ export default function WorkoutTab() {
       if (isRunning) {
         playDoubleDing();
         if (ttsEnabled) {
-          scheduleSpeak(getStepSpeechSegments(steps[nextIdx]), 1000);
+          scheduleStepSpeech(steps[nextIdx]);
         } else {
           scheduleSpeak('', 1000);
         }
@@ -160,7 +194,7 @@ export default function WorkoutTab() {
     playDoubleDing,
     ttsEnabled,
     scheduleSpeak,
-    getStepSpeechSegments,
+    scheduleStepSpeech,
     disableNoSleep,
   ]);
 
@@ -217,9 +251,10 @@ export default function WorkoutTab() {
       }
       setIsRunning(true);
       enableNoSleep();
-      speakSegments(getStepSpeechSegments(steps[currentIdx]));
+      speakStep(steps[currentIdx]);
     } else {
       setIsRunning(false);
+      disableNoSleep();
       cancelAll();
     }
   }, [
@@ -227,12 +262,12 @@ export default function WorkoutTab() {
     isRunning,
     isFinished,
     handleReset,
-    speakSegments,
+    speakStep,
     steps,
     currentIdx,
     enableNoSleep,
+    disableNoSleep,
     cancelAll,
-    getStepSpeechSegments,
   ]);
 
   useEffect(() => {
@@ -269,7 +304,7 @@ export default function WorkoutTab() {
     setCurrentIdx(idx);
     setTimeLeft(steps[idx].duration);
     if (isRunning) {
-      speakSegments(getStepSpeechSegments(steps[idx]));
+      speakStep(steps[idx]);
     }
   };
 
