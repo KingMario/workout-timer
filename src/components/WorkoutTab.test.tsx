@@ -190,7 +190,7 @@ describe('WorkoutTab', () => {
       mockAudioInstances[0]?.finish();
     });
 
-    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(3);
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(2);
     expect(mockAudioSources[1]).toMatch(
       /audio\/built-in-plans\/yunxi\/planA-s1-e1-name\.mp3$/,
     );
@@ -200,7 +200,7 @@ describe('WorkoutTab', () => {
       mockAudioInstances[0]?.finish();
     });
 
-    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(4);
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(3);
     expect(mockAudioSources[2]).toMatch(
       /audio\/built-in-plans\/yunxi\/planA-s1-e1\.mp3$/,
     );

@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import NoSleep from 'nosleep.js';
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
-const SILENT_AUDIO_DATA_URI =
-  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
 
 const resolveAudioPath = (filePath: string) => {
   if (ABSOLUTE_URL_PATTERN.test(filePath) || typeof window === 'undefined') {
@@ -137,24 +135,7 @@ export function useAudio(ttsEnabled = true) {
       } catch {}
     }
 
-    const recordedAudio = getRecordedAudio();
-    if (recordedAudio) {
-      try {
-        const unlockSrc = SILENT_AUDIO_DATA_URI;
-        recordedAudio.muted = true;
-        recordedAudio.src = unlockSrc;
-        recordedAudio.load();
-        await recordedAudio.play();
-        if (recordedAudio.src === unlockSrc) {
-          recordedAudio.pause();
-          recordedAudio.currentTime = 0;
-        }
-      } catch {
-        // Mobile browsers may still reject this; the real playback path handles fallback.
-      } finally {
-        recordedAudio.muted = false;
-      }
-    }
+    getRecordedAudio();
   }, [getRecordedAudio, initAudio]);
 
   const playDing = useCallback(async () => {
