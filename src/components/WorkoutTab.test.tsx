@@ -58,15 +58,30 @@ class AudioContextMock {
 }
 
 class AudioMock {
-  src: string;
+  private currentSrc = '';
+  currentTime = 0;
+  muted = false;
+  preload = '';
   listeners = new Map<string, () => void>();
   play = vi.fn().mockResolvedValue(undefined);
   pause = vi.fn();
+  load = vi.fn();
+  setAttribute = vi.fn();
 
-  constructor(src: string) {
+  constructor(src = '') {
     this.src = src;
-    mockAudioSources.push(src);
     mockAudioInstances.push(this);
+  }
+
+  get src() {
+    return this.currentSrc;
+  }
+
+  set src(value: string) {
+    this.currentSrc = value;
+    if (value && !value.startsWith('data:audio/')) {
+      mockAudioSources.push(value);
+    }
   }
 
   addEventListener(event: string, callback: () => void) {
@@ -135,15 +150,14 @@ describe('WorkoutTab', () => {
   };
 
   const finishInitialRecordedSpeech = async () => {
-    const startIndex = mockAudioInstances.length - 1;
     await act(async () => {
-      mockAudioInstances[startIndex]?.finish();
+      mockAudioInstances[0]?.finish();
     });
     await act(async () => {
-      mockAudioInstances[startIndex + 1]?.finish();
+      mockAudioInstances[0]?.finish();
     });
     await act(async () => {
-      mockAudioInstances[startIndex + 2]?.finish();
+      mockAudioInstances[0]?.finish();
     });
   };
 
@@ -176,24 +190,24 @@ describe('WorkoutTab', () => {
       mockAudioInstances[0]?.finish();
     });
 
-    expect(mockAudioInstances[1]?.play).toHaveBeenCalled();
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(3);
     expect(mockAudioSources[1]).toMatch(
       /audio\/built-in-plans\/yunxi\/planA-s1-e1-name\.mp3$/,
     );
     expect(mockSpeak).not.toHaveBeenCalled();
 
     await act(async () => {
-      mockAudioInstances[1]?.finish();
+      mockAudioInstances[0]?.finish();
     });
 
-    expect(mockAudioInstances[2]?.play).toHaveBeenCalled();
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalledTimes(4);
     expect(mockAudioSources[2]).toMatch(
       /audio\/built-in-plans\/yunxi\/planA-s1-e1\.mp3$/,
     );
     expect(mockSpeak).not.toHaveBeenCalled();
 
     await act(async () => {
-      mockAudioInstances[2]?.finish();
+      mockAudioInstances[0]?.finish();
     });
 
     expect(mockDingStartCount).toBeGreaterThan(0);

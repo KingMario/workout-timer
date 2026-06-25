@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import NoSleep from 'nosleep.js';
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
+const SILENT_AUDIO_DATA_URI =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
 
 const resolveAudioPath = (filePath: string) => {
   if (ABSOLUTE_URL_PATTERN.test(filePath) || typeof window === 'undefined') {
@@ -35,9 +37,25 @@ export function useAudio(ttsEnabled = true) {
   const speakTimeoutRef = useRef<number | null>(null);
   const dingTimeoutRef = useRef<number | null>(null);
   const noSleepRef = useRef<NoSleep | null>(null);
+  const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
   const playbackIdRef = useRef(0);
   const currentAudioCancelRef = useRef<(() => void) | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const getRecordedAudio = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    if (!recordedAudioRef.current) {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.setAttribute?.('playsinline', 'true');
+      recordedAudioRef.current = audio;
+    }
+
+    return recordedAudioRef.current;
+  }, []);
 
   const cancelCurrentAudio = useCallback(() => {
     if (currentAudioCancelRef.current) {
@@ -118,7 +136,26 @@ export function useAudio(ttsEnabled = true) {
         source.start(0);
       } catch {}
     }
-  }, [initAudio]);
+
+    const recordedAudio = getRecordedAudio();
+    if (recordedAudio) {
+      try {
+        const unlockSrc = SILENT_AUDIO_DATA_URI;
+        recordedAudio.muted = true;
+        recordedAudio.src = unlockSrc;
+        recordedAudio.load();
+        await recordedAudio.play();
+        if (recordedAudio.src === unlockSrc) {
+          recordedAudio.pause();
+          recordedAudio.currentTime = 0;
+        }
+      } catch {
+        // Mobile browsers may still reject this; the real playback path handles fallback.
+      } finally {
+        recordedAudio.muted = false;
+      }
+    }
+  }, [getRecordedAudio, initAudio]);
 
   const playDing = useCallback(async () => {
     if (typeof window === 'undefined') {
@@ -174,7 +211,11 @@ export function useAudio(ttsEnabled = true) {
         }
 
         const resolvedPath = resolveAudioPath(filePath);
-        const audio = new Audio(resolvedPath);
+        const audio = getRecordedAudio();
+        if (!audio) {
+          resolve('failed');
+          return;
+        }
         let settled = false;
         let timeoutId: number | null = null;
 
@@ -221,6 +262,17 @@ export function useAudio(ttsEnabled = true) {
           resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
         }, 2000);
 
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = resolvedPath;
+          audio.load();
+        } catch {
+          cleanup();
+          resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
+          return;
+        }
+
         audio
           .play()
           .then(() => {
@@ -236,7 +288,7 @@ export function useAudio(ttsEnabled = true) {
           });
       });
     },
-    [isCurrentPlayback],
+    [getRecordedAudio, isCurrentPlayback],
   );
 
   const tryPlayFiles = useCallback(

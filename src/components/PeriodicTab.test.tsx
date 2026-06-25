@@ -15,14 +15,29 @@ const mockAudioSources: string[] = [];
 let mockAudioMode: 'error' | 'play-success' = 'error';
 
 class AudioMock {
-  src: string;
+  private currentSrc = '';
+  currentTime = 0;
+  muted = false;
+  preload = '';
   listeners = new Map<string, () => void>();
   play = vi.fn().mockResolvedValue(undefined);
   pause = vi.fn();
+  load = vi.fn();
+  setAttribute = vi.fn();
 
-  constructor(src: string) {
+  constructor(src = '') {
     this.src = src;
-    mockAudioSources.push(src);
+  }
+
+  get src() {
+    return this.currentSrc;
+  }
+
+  set src(value: string) {
+    this.currentSrc = value;
+    if (value && !value.startsWith('data:audio/')) {
+      mockAudioSources.push(value);
+    }
   }
 
   addEventListener(event: string, callback: () => void) {
