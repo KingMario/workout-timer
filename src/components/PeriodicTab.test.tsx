@@ -24,6 +24,11 @@ class AudioMock {
   pause = vi.fn();
   load = vi.fn();
   setAttribute = vi.fn();
+  removeAttribute = vi.fn((name: string) => {
+    if (name === 'src') {
+      this.src = '';
+    }
+  });
 
   constructor(src = '') {
     this.src = src;

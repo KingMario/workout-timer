@@ -200,6 +200,15 @@ export function useAudio(ttsEnabled = true) {
         let settled = false;
         let timeoutId: number | null = null;
 
+        const stopAudio = () => {
+          try {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.removeAttribute('src');
+            audio.load();
+          } catch {}
+        };
+
         const onEnded = () => {
           cleanup();
           resolve(isCurrentPlayback(playbackId) ? 'played' : 'cancelled');
@@ -207,6 +216,7 @@ export function useAudio(ttsEnabled = true) {
 
         const onError = () => {
           cleanup();
+          stopAudio();
           resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
         };
 
@@ -227,10 +237,7 @@ export function useAudio(ttsEnabled = true) {
 
         const cancelAudio = () => {
           cleanup();
-          try {
-            audio.pause();
-            audio.currentTime = 0;
-          } catch {}
+          stopAudio();
           resolve('cancelled');
         };
 
@@ -240,6 +247,7 @@ export function useAudio(ttsEnabled = true) {
 
         timeoutId = window.setTimeout(() => {
           cleanup();
+          stopAudio();
           resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
         }, 2000);
 
@@ -257,6 +265,10 @@ export function useAudio(ttsEnabled = true) {
         audio
           .play()
           .then(() => {
+            if (settled) {
+              stopAudio();
+              return;
+            }
             if (timeoutId !== null) {
               clearTimeout(timeoutId);
               timeoutId = null;
@@ -265,6 +277,7 @@ export function useAudio(ttsEnabled = true) {
           .catch((e) => {
             console.warn(`Failed to play audio file ${resolvedPath}:`, e);
             cleanup();
+            stopAudio();
             resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
           });
       });

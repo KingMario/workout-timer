@@ -23,7 +23,7 @@ const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 const mockCancel = window.speechSynthesis.cancel as unknown as Mock;
 const mockAudioSources: string[] = [];
 const mockAudioInstances: AudioMock[] = [];
-let mockAudioMode: 'error' | 'play-success' = 'error';
+let mockAudioMode: 'error' | 'play-success' | 'slow-start' = 'error';
 let mockDingStartCount = 0;
 
 class AudioContextMock {
@@ -67,9 +67,24 @@ class AudioMock {
   pause = vi.fn();
   load = vi.fn();
   setAttribute = vi.fn();
+  removeAttribute = vi.fn((name: string) => {
+    if (name === 'src') {
+      this.src = '';
+    }
+  });
+  resolvePlay: (() => void) | null = null;
 
   constructor(src = '') {
     this.src = src;
+    this.play.mockImplementation(() => {
+      if (mockAudioMode === 'slow-start') {
+        return new Promise<void>((resolve) => {
+          this.resolvePlay = resolve;
+        });
+      }
+
+      return Promise.resolve();
+    });
     mockAudioInstances.push(this);
   }
 
@@ -212,6 +227,42 @@ describe('WorkoutTab', () => {
 
     expect(mockDingStartCount).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
+  });
+
+  it('stops recorded audio before falling back when playback start times out', async () => {
+    mockAudioMode = 'slow-start';
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    expect(mockAudioSources[0]).toMatch(
+      /audio\/built-in-plans\/yunxi\/planA-s1\.mp3$/,
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(mockAudioInstances[0]?.pause).toHaveBeenCalled();
+    expect(mockAudioInstances[0]?.removeAttribute).toHaveBeenCalledWith('src');
+    expect(mockSpeak).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('热身阶段') }),
+    );
+    const pauseCallsBeforePlayResolves =
+      mockAudioInstances[0]?.pause.mock.calls.length ?? 0;
+
+    await act(async () => {
+      mockAudioInstances[0]?.resolvePlay?.();
+    });
+
+    expect(mockAudioInstances[0]?.pause.mock.calls.length).toBeGreaterThan(
+      pauseCallsBeforePlayResolves,
+    );
   });
 
   it('renders initial state correctly', async () => {
