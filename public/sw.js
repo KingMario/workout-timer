@@ -55,14 +55,67 @@ const isCacheableAsset = (url) =>
       url.pathname,
     ));
 
+const createRangeResponse = async (request, response) => {
+  const range = request.headers.get('range');
+  if (!range) {
+    return response;
+  }
+
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match) {
+    return response;
+  }
+
+  const buffer = await response.arrayBuffer();
+  const size = buffer.byteLength;
+  let start = match[1] ? Number(match[1]) : 0;
+  let end = match[2] ? Number(match[2]) : size - 1;
+
+  if (!match[1] && match[2]) {
+    const suffixLength = Number(match[2]);
+    start = Math.max(size - suffixLength, 0);
+    end = size - 1;
+  }
+
+  if (
+    Number.isNaN(start) ||
+    Number.isNaN(end) ||
+    start < 0 ||
+    end < start ||
+    start >= size
+  ) {
+    return new Response(null, {
+      status: 416,
+      statusText: 'Range Not Satisfiable',
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes */${size}`,
+      },
+    });
+  }
+
+  end = Math.min(end, size - 1);
+  const body = buffer.slice(start, end + 1);
+  const headers = new Headers(response.headers);
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('Content-Length', String(body.byteLength));
+  headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
+
+  return new Response(body, {
+    status: 206,
+    statusText: 'Partial Content',
+    headers,
+  });
+};
+
 const cacheFirst = async (request) => {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request.url);
   if (cached) {
-    return cached;
+    return createRangeResponse(request, cached);
   }
 
   const response = await fetch(request);
-  if (response.status === 200) {
+  if (response.status === 200 && !request.headers.has('range')) {
     const cache = await caches.open(RUNTIME_CACHE);
     await cache.put(request, response.clone());
   }
