@@ -49,10 +49,16 @@ Implications:
 
 - Multiple `useAudio` consumers (currently `WorkoutTab` and `PeriodicTab`,
   possibly more in the future) share one `NoSleep` instance.
-- The `useEffect` cleanup that currently calls `noSleepRef.current?.disable()`
-  on unmount is replaced by a page-lifetime `disableNoSleep()` call on
-  `beforeunload`. Hook unmounts do not tear down NoSleep, but no consumer
-  currently relies on that.
+- The hook keeps an unmount-cleanup `useEffect` that calls
+  `disableNoSleepModule()`. This is required because `page.tsx` mounts tabs
+  conditionally on the active mode (lines 110, 119): switching modes
+  unmounts one tab and mounts the other without triggering `beforeunload`,
+  so without this cleanup a tab that enabled NoSleep would leave it on for
+  the rest of the page session.
+- A `beforeunload` listener is also registered by each mounted hook as a
+  page-close fallback. Listeners are removable on unmount, and
+  `disableNoSleepModule()` is idempotent, so the multiple-registration is
+  harmless.
 - `useRef` for `noSleepRef` is removed from the hook body.
 
 ## P1 design — module-level NoSleep + generation token
@@ -86,7 +92,11 @@ const enableNoSleepModule = async () => {
   if (!noSleepModule.instance) {
     try {
       const Ctor = await loadNoSleep();
-      if (myGen !== noSleepModule.generation) return;
+      if (myGen !== noSleepModule.generation) {
+        // A disable arrived during import — abort before creating the
+        // NoSleep instance so we don't leak one.
+        return;
+      }
       noSleepModule.instance = new Ctor();
     } catch {
       return;
@@ -95,6 +105,15 @@ const enableNoSleepModule = async () => {
   if (myGen !== noSleepModule.generation) return;
   try {
     await noSleepModule.instance.enable();
+    // Post-await token check: a disable() that arrived while enable() was
+    // in flight already disabled the underlying media, but a defensive
+    // disable here covers any race where the disable was synchronous and
+    // completed before enable() actually started toggling media state.
+    if (myGen !== noSleepModule.generation) {
+      try {
+        noSleepModule.instance.disable();
+      } catch {}
+    }
   } catch {}
 };
 
@@ -119,9 +138,35 @@ const disableNoSleep = useCallback(() => disableNoSleepModule(), []);
   still returns a Promise; `disableNoSleep` is synchronous).
 - No hook-local state for NoSleep.
 
-### Page-lifetime teardown
+### Unmount teardown
 
-Add a one-time listener in `useAudio` (registered once per page):
+`page.tsx` (lines 110, 119) conditionally mounts `WorkoutTab` and
+`PeriodicTab` based on the active mode. Switching modes unmounts one tab and
+mounts the other without triggering `beforeunload`, so a tab that enabled
+NoSleep could leave it on for the rest of the page session if no other
+cleanup path ran. Therefore the hook must keep an unmount cleanup that calls
+`disableNoSleepModule()`:
+
+```ts
+useEffect(() => {
+  return () => {
+    disableNoSleepModule();
+  };
+}, []);
+```
+
+The existing `useEffect` in `useAudio` that constructs `noSleepRef.current`
+on mount and the `noSleepRef` declaration itself are removed. Cleanup no
+longer touches a hook-local ref — it calls the module-level disable.
+
+### Page-close teardown
+
+In addition to unmount cleanup, register a `beforeunload` listener once per
+page lifetime so that fully closing the tab also disables NoSleep. Because
+each `useAudio` instance registers its own listener on mount, the listener
+count is bounded by the number of mounted hooks (small in practice — one
+tab at a time). Listeners are removable on unmount, and `disableNoSleepModule`
+is idempotent, so the redundant registration is harmless.
 
 ```ts
 useEffect(() => {
@@ -130,9 +175,6 @@ useEffect(() => {
   return () => window.removeEventListener('beforeunload', onBeforeUnload);
 }, []);
 ```
-
-The existing `useEffect` in `useAudio` that creates `noSleepRef.current` and
-the `noSleepRef` declaration itself are removed.
 
 ### Why this works
 
@@ -143,8 +185,16 @@ the `noSleepRef` declaration itself are removed.
 - The generation check after each `await` catches:
   1. A disable that arrived during `loadNoSleep()` (creation aborted, no
      `NoSleep` instance leaked).
-  2. A disable that arrived during `instance.enable()` (the `await`
-     resolves, but the token mismatch skips the second call).
+  2. A disable that arrived between instance construction and the
+     `enable()` call (caller's intent is honored: no enable).
+- The post-`enable()` generation check is a defensive rollback: if a disable
+  arrived during `await instance.enable()`, `disable()` already ran
+  synchronously and is the primary fix. The rollback covers the narrow race
+  where `disable()` and `enable()` were scheduled close enough that the
+  await resolves after disable but the underlying media state is left
+  enabled.
+- Unmount cleanup ensures switching between `WorkoutTab` and `PeriodicTab`
+  (no `beforeunload` in that flow) still disables NoSleep.
 - No two `useAudio` consumers can race against each other's `NoSleep`
   objects — there is only one.
 
@@ -173,7 +223,14 @@ isolated test file; WorkoutTab tests cover it indirectly).
    - Trigger enable on consumer A; before resolve, trigger disable on
      consumer B.
    - Resolve.
-   - Assert `mockNoSleepEnable` was not called.
+   - Assert `mockNoSleepEnable` was not called on the shared instance
+     (consumer A's create-and-enable was discarded).
+4. **Unmount cleanup: switching modes disables NoSleep.**
+   - Enable NoSleep in a test consumer.
+   - Unmount the consumer.
+   - Assert `mockNoSleepDisable` was called once.
+   - Mount a second consumer in the same test session — it should reuse
+     the existing `NoSleep` instance (state is module-level).
 
 The existing 17 WorkoutTab tests must continue to pass without modification
 because the externally observable behavior of the hook is unchanged.
@@ -270,10 +327,14 @@ an MP3 once.
    - Fresh install: no MP3 network requests until a step is played.
    - After listening to step A, going Offline and reloading: step A still
      plays.
-5. Manual smoke on iOS Safari: tap a step, start the workout, screen stays
-   awake (verifies the P1 fix did not regress the happy path). Then start
-   → pause within ~100ms (faster than the nosleep import) — confirm screen
-   is allowed to sleep again.
+5. Manual smoke on iOS Safari:
+   - Tap a step, start the workout, screen stays awake (verifies the P1 fix
+     did not regress the happy path).
+   - Start → pause within ~100ms (faster than the nosleep import) —
+     confirm screen is allowed to sleep again (generation token honored).
+   - Start a workout, switch to periodic mode, leave the page open — the
+     screen should sleep after the device's idle timeout (unmount cleanup
+     disabled NoSleep).
 
 ## Files touched
 
