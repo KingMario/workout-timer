@@ -47,7 +47,7 @@ export default function WorkoutTimer() {
         rel="noopener noreferrer"
         aria-label="在 GitHub 上查看源码"
         tabIndex={canUseApp ? 0 : -1}
-        className="fixed top-4 right-4 z-50 p-2 rounded-md text-gray-700 dark:text-gray-100 bg-white/80 dark:bg-zinc-900/60 shadow hover:scale-105 transition-transform"
+        className="fixed top-4 right-4 z-[70] p-2 rounded-md text-gray-700 dark:text-gray-100 bg-white/80 dark:bg-zinc-900/60 shadow hover:scale-105 transition-transform"
       >
         <svg
           viewBox="0 0 24 24"
