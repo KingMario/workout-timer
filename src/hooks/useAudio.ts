@@ -667,6 +667,7 @@ export function useAudio(ttsEnabled = true) {
   return {
     initAudio,
     unlockAudio,
+    preloadRecordedAudio,
     playDing,
     speak,
     speakSegments,

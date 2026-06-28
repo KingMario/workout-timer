@@ -45,6 +45,24 @@ const formatTime = (sec: number) => {
 const hasRecordedAudio = (segments: SpeechSegment[]) =>
   segments.some((segment) => Boolean(segment.audio));
 
+const collectPlanAudioPaths = (sections: Section[]) => {
+  const paths = new Set<string>();
+  sections.forEach((section) => {
+    if (section.audio) {
+      paths.add(section.audio);
+    }
+    section.steps.forEach((step) => {
+      if (step.nameAudio) {
+        paths.add(step.nameAudio);
+      }
+      if (step.audio) {
+        paths.add(step.audio);
+      }
+    });
+  });
+  return [...paths];
+};
+
 export default function WorkoutTab() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [planSections, setPlanSections] = useState<Section[]>(DEFAULT_PLAN);
@@ -96,6 +114,7 @@ export default function WorkoutTab() {
 
   const {
     unlockAudio,
+    preloadRecordedAudio,
     speakSegments,
     scheduleSpeak,
     playDoubleDing,
@@ -104,6 +123,13 @@ export default function WorkoutTab() {
     disableNoSleep,
     isSpeaking,
   } = useAudio(ttsEnabled);
+
+  useEffect(() => {
+    const audioPaths = collectPlanAudioPaths(planSections);
+    if (audioPaths.length > 0) {
+      preloadRecordedAudio(audioPaths);
+    }
+  }, [planSections, preloadRecordedAudio]);
 
   const getStepSpeechSegments = useCallback((step: Step): SpeechSegment[] => {
     const segments: SpeechSegment[] = [];
@@ -257,13 +283,13 @@ export default function WorkoutTab() {
     }
   }, [currentIdx]);
 
-  const togglePlay = useCallback(() => {
-    unlockAudio();
+  const togglePlay = useCallback(async () => {
     if (!isRunning) {
       if (isFinished) {
         handleReset();
         return;
       }
+      await unlockAudio();
       setIsRunning(true);
       const initialSegments = getStepSpeechSegments(steps[currentIdx]);
       if (hasRecordedAudio(initialSegments)) {
@@ -282,10 +308,10 @@ export default function WorkoutTab() {
       cancelAll();
     }
   }, [
-    unlockAudio,
     isRunning,
     isFinished,
     handleReset,
+    unlockAudio,
     getStepSpeechSegments,
     getSpeechNoSleepCallbacks,
     speakSegments,
@@ -312,7 +338,7 @@ export default function WorkoutTab() {
 
       if (e.code === 'Space' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        togglePlay();
+        void togglePlay();
       } else if (e.code === 'Escape') {
         e.preventDefault();
         handleReset();
@@ -325,11 +351,11 @@ export default function WorkoutTab() {
     };
   }, [togglePlay, handleReset]);
 
-  const jumpToStep = (idx: number) => {
-    unlockAudio();
+  const jumpToStep = async (idx: number) => {
     setCurrentIdx(idx);
     setTimeLeft(steps[idx].duration);
     if (isRunning) {
+      await unlockAudio();
       speakStep(steps[idx]);
     }
   };
@@ -441,11 +467,11 @@ export default function WorkoutTab() {
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => jumpToStep(idx)}
+                  onClick={() => void jumpToStep(idx)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      jumpToStep(idx);
+                      void jumpToStep(idx);
                     }
                   }}
                   aria-current={idx === currentIdx ? 'step' : undefined}
@@ -516,7 +542,7 @@ export default function WorkoutTab() {
         <div className="flex items-center gap-4">
           <>
             <button
-              onClick={togglePlay}
+              onClick={() => void togglePlay()}
               className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition-all"
               aria-label={isFinished ? '重新开始' : isRunning ? '暂停' : '开始'}
             >

@@ -43,12 +43,14 @@ const mockAudioSources: string[] = [];
 const mockAudioInstances: AudioMock[] = [];
 let mockAudioMode: 'abort' | 'error' | 'play-success' | 'slow-start' = 'error';
 let mockDingStartCount = 0;
+let mockAudioContextState: AudioContextState = 'running';
+let mockAudioContextResume: () => Promise<void> = () => Promise.resolve();
 
 class AudioContextMock {
-  state = 'running';
+  state = mockAudioContextState;
   currentTime = 0;
   destination = {};
-  resume = vi.fn().mockResolvedValue(undefined);
+  resume = vi.fn(() => mockAudioContextResume());
   createBuffer = vi.fn(() => ({}));
   createBufferSource = vi.fn(() => ({
     buffer: null,
@@ -141,6 +143,14 @@ class AudioMock {
   }
 }
 
+const createDeferred = () => {
+  let resolve!: () => void;
+  const promise = new Promise<void>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+  return { promise, resolve };
+};
+
 describe('WorkoutTab', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -153,6 +163,8 @@ describe('WorkoutTab', () => {
     mockAudioInstances.length = 0;
     mockDingStartCount = 0;
     mockAudioMode = 'error';
+    mockAudioContextState = 'running';
+    mockAudioContextResume = () => Promise.resolve();
     vi.stubGlobal('Audio', AudioMock);
     const audioWindow = window as unknown as {
       AudioContext: typeof AudioContext;
@@ -228,6 +240,59 @@ describe('WorkoutTab', () => {
     }
   };
 
+  it('preloads every MP3 in the active built-in workout plan after render', async () => {
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    const preloadHrefs = new Set(
+      Array.from(
+        document.head.querySelectorAll<HTMLLinkElement>('link[rel="preload"]'),
+      )
+        .filter((link) => link.as === 'audio')
+        .map((link) => link.href)
+        .filter((href) => href.includes('/audio/built-in-plans/yunxi/')),
+    );
+
+    expect(preloadHrefs.size).toBe(48);
+    expect(
+      [...preloadHrefs].some((href) => href.endsWith('/planA-s1.mp3')),
+    ).toBe(true);
+    expect(
+      [...preloadHrefs].some((href) => href.endsWith('/planA-s1-e1-name.mp3')),
+    ).toBe(true);
+    expect(
+      [...preloadHrefs].some((href) => href.endsWith('/planA-s4-e4.mp3')),
+    ).toBe(true);
+  });
+
+  it('waits for mobile audio unlock before starting the first built-in MP3', async () => {
+    mockAudioMode = 'play-success';
+    mockAudioContextState = 'suspended';
+    const resume = createDeferred();
+    mockAudioContextResume = () => resume.promise;
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    expect(mockAudioInstances).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /开始/ })).toBeInTheDocument();
+
+    resume.resolve();
+    await act(async () => {
+      await resume.promise;
+      await Promise.resolve();
+    });
+
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
+  });
+
   it('uses recorded audio without falling back to browser speech synthesis', async () => {
     mockAudioMode = 'play-success';
 
@@ -291,6 +356,7 @@ describe('WorkoutTab', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
     });
+    await flushAsyncAudioCallbacks();
 
     // NoSleep is now lazy-loaded — disable is a no-op until enable runs,
     // and enable is deferred until after recorded audio finishes so its
@@ -299,8 +365,9 @@ describe('WorkoutTab', () => {
     expect(mockNoSleepDisable).not.toHaveBeenCalled();
 
     await finishInitialRecordedSpeech();
+    await flushAsyncAudioCallbacks();
     await act(async () => {
-      vi.advanceTimersByTime(300);
+      vi.runOnlyPendingTimers();
     });
     await flushAsyncAudioCallbacks();
 
