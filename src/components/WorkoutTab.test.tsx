@@ -43,8 +43,32 @@ const mockAudioSources: string[] = [];
 const mockAudioInstances: AudioMock[] = [];
 let mockAudioMode: 'abort' | 'error' | 'play-success' | 'slow-start' = 'error';
 let mockDingStartCount = 0;
+let mockDataAudioPlayCount = 0;
 let mockAudioContextState: AudioContextState = 'running';
 let mockAudioContextResume: () => Promise<void> = () => Promise.resolve();
+
+const mockNavigatorAudioPlatform = ({
+  userAgent,
+  platform,
+  maxTouchPoints,
+}: {
+  userAgent: string;
+  platform: string;
+  maxTouchPoints: number;
+}) => {
+  Object.defineProperty(window.navigator, 'userAgent', {
+    value: userAgent,
+    configurable: true,
+  });
+  Object.defineProperty(window.navigator, 'platform', {
+    value: platform,
+    configurable: true,
+  });
+  Object.defineProperty(window.navigator, 'maxTouchPoints', {
+    value: maxTouchPoints,
+    configurable: true,
+  });
+};
 
 class AudioContextMock {
   state = mockAudioContextState;
@@ -97,6 +121,10 @@ class AudioMock {
   constructor(src = '') {
     this.src = src;
     this.play.mockImplementation(() => {
+      if (this.src.startsWith('data:audio/')) {
+        mockDataAudioPlayCount += 1;
+      }
+
       if (mockAudioMode === 'abort') {
         return Promise.reject(
           new DOMException('The operation was aborted.', 'AbortError'),
@@ -162,9 +190,15 @@ describe('WorkoutTab', () => {
     mockAudioSources.length = 0;
     mockAudioInstances.length = 0;
     mockDingStartCount = 0;
+    mockDataAudioPlayCount = 0;
     mockAudioMode = 'error';
     mockAudioContextState = 'running';
     mockAudioContextResume = () => Promise.resolve();
+    mockNavigatorAudioPlatform({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+    });
     vi.stubGlobal('Audio', AudioMock);
     const audioWindow = window as unknown as {
       AudioContext: typeof AudioContext;
@@ -344,6 +378,30 @@ describe('WorkoutTab', () => {
 
     expect(mockDingStartCount).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
+  });
+
+  it('uses an HTMLAudio ding fallback on Apple mobile devices', async () => {
+    mockAudioMode = 'play-success';
+    mockNavigatorAudioPlatform({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+    });
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    await finishInitialRecordedSpeech();
+    await flushAsyncAudioCallbacks();
+
+    expect(mockDataAudioPlayCount).toBeGreaterThan(0);
+    expect(mockDingStartCount).toBe(0);
   });
 
   it('keeps NoSleep disabled while built-in AI MP3 starts because NoSleep media can conflict on mobile Safari', async () => {

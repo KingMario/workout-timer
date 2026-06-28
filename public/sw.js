@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v59fb53ae';
+const CACHE_VERSION = 'va94f48c3';
 const APP_CACHE = `workout-timer-app-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `workout-timer-runtime-${CACHE_VERSION}`;
 const BASE_PATH = '/workout-timer';
@@ -62,9 +62,9 @@ const cacheFirst = async (request) => {
   }
 
   const response = await fetch(request);
-  if (response.ok) {
+  if (response.status === 200) {
     const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response.clone());
+    await cache.put(request, response.clone());
   }
   return response;
 };
@@ -72,9 +72,9 @@ const cacheFirst = async (request) => {
 const networkFirstNavigation = async (request) => {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {

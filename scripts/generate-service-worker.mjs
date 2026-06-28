@@ -174,9 +174,9 @@ const cacheFirst = async (request) => {
   }
 
   const response = await fetch(request);
-  if (response.ok) {
+  if (response.status === 200) {
     const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response.clone());
+    await cache.put(request, response.clone());
   }
   return response;
 };
@@ -184,9 +184,9 @@ const cacheFirst = async (request) => {
 const networkFirstNavigation = async (request) => {
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
@@ -217,7 +217,7 @@ self.addEventListener('fetch', (event) => {
 });
 `;
 
-  return `${body}\n`;
+  return `${body.trimEnd()}\n`;
 };
 
 const publicServiceWorker = generateServiceWorker({ includeOutAssets: false });

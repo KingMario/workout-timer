@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
 const RECORDED_AUDIO_START_TIMEOUT_MS = 8000;
+const DING_FREQUENCY_HZ = 880;
+const DING_DURATION_SECONDS = 0.5;
+const DING_SAMPLE_RATE = 22050;
 const preloadedAudioPaths = new Set<string>();
+let dingDataUrl: string | null = null;
 
 type NoSleepLike = {
   enable: () => Promise<void> | void;
@@ -34,6 +38,65 @@ const loadNoSleep = () => {
     );
   }
   return noSleepModule.importPromise;
+};
+
+const isAppleMobileDevice = () => {
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+};
+
+const writeAscii = (view: DataView, offset: number, value: string) => {
+  for (let i = 0; i < value.length; i += 1) {
+    view.setUint8(offset + i, value.charCodeAt(i));
+  }
+};
+
+const getDingDataUrl = () => {
+  if (dingDataUrl) {
+    return dingDataUrl;
+  }
+
+  const sampleCount = Math.floor(DING_DURATION_SECONDS * DING_SAMPLE_RATE);
+  const dataSize = sampleCount * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  writeAscii(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeAscii(view, 8, 'WAVE');
+  writeAscii(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, DING_SAMPLE_RATE, true);
+  view.setUint32(28, DING_SAMPLE_RATE * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  for (let i = 0; i < sampleCount; i += 1) {
+    const time = i / DING_SAMPLE_RATE;
+    const envelope =
+      0.5 * Math.exp((Math.log(0.00001 / 0.5) * time) / DING_DURATION_SECONDS);
+    const sample = Math.sin(2 * Math.PI * DING_FREQUENCY_HZ * time) * envelope;
+    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 32767, true);
+  }
+
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  dingDataUrl = `data:audio/wav;base64,${btoa(binary)}`;
+  return dingDataUrl;
 };
 
 const enableNoSleepModule = async () => {
@@ -283,6 +346,14 @@ export function useAudio(ttsEnabled = true) {
       return;
     }
     try {
+      if (isAppleMobileDevice()) {
+        const audio = new Audio(getDingDataUrl());
+        audio.preload = 'auto';
+        audio.setAttribute?.('playsinline', 'true');
+        await audio.play();
+        return;
+      }
+
       if (!audioCtxRef.current) {
         initAudio();
       }
