@@ -64,6 +64,62 @@ const PLAN_MODULES = [
     file: 'src/schemas/book-stretch-plans.ts',
     exportName: 'BOOK_RUNNER_RECOVERY_PLAN',
   },
+  {
+    key: 'planI',
+    id: 'aging-backwards-posture',
+    title: '逆龄姿态训练',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_POSTURE_PLAN',
+  },
+  {
+    key: 'planJ',
+    id: 'aging-backwards-weight-loss',
+    title: '逆龄代谢唤醒',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_WEIGHT_LOSS_PLAN',
+  },
+  {
+    key: 'planK',
+    id: 'aging-backwards-joints',
+    title: '逆龄关节润滑',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_JOINTS_PLAN',
+  },
+  {
+    key: 'planL',
+    id: 'aging-backwards-energy',
+    title: '逆龄能量激活',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_ENERGY_PLAN',
+  },
+  {
+    key: 'planM',
+    id: 'aging-backwards-pain-relief',
+    title: '逆龄疼痛缓解',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_PAIN_RELIEF_PLAN',
+  },
+  {
+    key: 'planN',
+    id: 'aging-backwards-balance',
+    title: '逆龄平衡训练',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_BALANCE_PLAN',
+  },
+  {
+    key: 'planO',
+    id: 'aging-backwards-mobility',
+    title: '逆龄活动度提升',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_MOBILITY_PLAN',
+  },
+  {
+    key: 'planP',
+    id: 'aging-backwards-bones',
+    title: '逆龄骨骼保护',
+    file: 'src/schemas/aging-backwards-plans.ts',
+    exportName: 'AGING_BACKWARDS_BONES_PLAN',
+  },
 ];
 
 const PERIODIC_PROMPTS = [
@@ -305,16 +361,18 @@ for (const planMeta of PLAN_MODULES) {
     section.steps.forEach((step, stepIndex) => {
       const exerciseNumber = stepIndex + 1;
       const newFilename = `${planMeta.key}-s${sectionNumber}-e${exerciseNumber}.mp3`;
-      const combined = step.desc ? `${step.name}。${step.desc}` : step.name;
+      const exerciseText = step.desc || step.name;
       const source = chooseSourceFile(availableFiles, normalizedFileIndex, [
-        { kind: 'exercise', matchType: 'combined', text: combined },
-        { kind: 'exercise', matchType: 'description', text: step.desc },
-        { kind: 'exercise', matchType: 'name', text: step.name },
+        {
+          kind: 'exercise',
+          matchType: step.desc ? 'description' : 'name',
+          text: exerciseText,
+        },
       ]);
       if (source.oldFilename) {
         referencedBefore.add(source.oldFilename);
       }
-      const reusableKeys = [combined, step.desc, step.name].map((text) =>
+      const reusableKeys = [exerciseText].map((text) =>
         normalizeGeneratedFilename(text),
       );
       const reusableSource = reusableKeys

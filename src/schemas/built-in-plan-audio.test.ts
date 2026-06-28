@@ -92,4 +92,47 @@ describe('built-in plan audio helpers', () => {
       expect.arrayContaining([expect.stringContaining('各半时间')]),
     );
   });
+
+  it('registers Aging Backwards plans with Chinese copy and structured audio', () => {
+    const expectedIds = [
+      'aging-backwards-posture',
+      'aging-backwards-weight-loss',
+      'aging-backwards-joints',
+      'aging-backwards-energy',
+      'aging-backwards-pain-relief',
+      'aging-backwards-balance',
+      'aging-backwards-mobility',
+      'aging-backwards-bones',
+    ];
+    const planIds = BUILT_IN_PLANS.map((plan) => plan.id);
+
+    expectedIds.forEach((id) => expect(planIds).toContain(id));
+
+    const posture = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'aging-backwards-posture',
+    );
+
+    expect(posture?.data[0].audio).toBe(
+      'audio/built-in-plans/yunxi/planI-s1.mp3',
+    );
+    expect(posture?.data[0].steps[0].audio).toBe(
+      'audio/built-in-plans/yunxi/planI-s1-e1.mp3',
+    );
+
+    const userFacingText = BUILT_IN_PLANS.filter((plan) =>
+      expectedIds.includes(plan.id),
+    ).flatMap((plan) => [
+      plan.title,
+      plan.description,
+      ...plan.data.flatMap((section) => [
+        section.name,
+        section.tips,
+        ...section.steps.flatMap((step) => [step.name, step.desc]),
+      ]),
+    ]);
+
+    expect(userFacingText).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/[A-Za-z]/)]),
+    );
+  });
 });

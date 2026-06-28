@@ -1,13 +1,23 @@
 import {
+  AGING_BACKWARDS_BALANCE_PLAN,
+  AGING_BACKWARDS_BONES_PLAN,
+  AGING_BACKWARDS_ENERGY_PLAN,
+  AGING_BACKWARDS_JOINTS_PLAN,
+  AGING_BACKWARDS_MOBILITY_PLAN,
+  AGING_BACKWARDS_PAIN_RELIEF_PLAN,
+  AGING_BACKWARDS_POSTURE_PLAN,
+  AGING_BACKWARDS_WEIGHT_LOSS_PLAN,
+} from './aging-backwards-plans';
+import {
   BOOK_FULL_BODY_STRETCH_PLAN,
   BOOK_LOWER_BACK_RELIEF_PLAN,
   BOOK_NECK_SHOULDER_RELIEF_PLAN,
   BOOK_RUNNER_RECOVERY_PLAN,
 } from './book-stretch-plans';
+import { BREAK_PLAN } from './break-plan';
 import { DEFAULT_PLAN } from './default-plan';
 import { MCKENZIE_PLAN } from './mckenzie-plan';
 import { SEATED_WORKOUT_PLAN } from './seated-workout-plan';
-import { BREAK_PLAN } from './break-plan';
 import type { WorkoutPlan } from './workout-plan';
 
 export interface BuiltInPlan {
@@ -66,9 +76,65 @@ export const BUILT_IN_PLANS: BuiltInPlan[] = [
     data: BOOK_RUNNER_RECOVERY_PLAN,
     description: '跑步后使用的 15 分钟臀腿、髋前侧和小腿恢复拉伸。',
   },
+  {
+    id: 'aging-backwards-posture',
+    title: '逆龄姿态训练',
+    data: AGING_BACKWARDS_POSTURE_PLAN,
+    description: '从脊柱、胸腔和髋部入手的姿态打开训练。',
+  },
+  {
+    id: 'aging-backwards-weight-loss',
+    title: '逆龄代谢唤醒',
+    data: AGING_BACKWARDS_WEIGHT_LOSS_PLAN,
+    description: '连续调动腿部、躯干和核心的大肌群活力训练。',
+  },
+  {
+    id: 'aging-backwards-joints',
+    title: '逆龄关节润滑',
+    data: AGING_BACKWARDS_JOINTS_PLAN,
+    description: '面向髋、膝、踝、肩和手腕的温和活动度训练。',
+  },
+  {
+    id: 'aging-backwards-energy',
+    title: '逆龄能量激活',
+    data: AGING_BACKWARDS_ENERGY_PLAN,
+    description: '用脚底、小腿和站姿动作提升身体循环与清醒感。',
+  },
+  {
+    id: 'aging-backwards-pain-relief',
+    title: '逆龄疼痛缓解',
+    data: AGING_BACKWARDS_PAIN_RELIEF_PLAN,
+    description: '针对髋腰、肩颈和腿部紧张的低强度舒缓计划。',
+  },
+  {
+    id: 'aging-backwards-balance',
+    title: '逆龄平衡训练',
+    data: AGING_BACKWARDS_BALANCE_PLAN,
+    description: '通过脚踝、髋部和单脚控制提升站姿稳定性。',
+  },
+  {
+    id: 'aging-backwards-mobility',
+    title: '逆龄活动度提升',
+    data: AGING_BACKWARDS_MOBILITY_PLAN,
+    description: '用流动拉伸改善髋、脊柱、肩和腿部活动范围。',
+  },
+  {
+    id: 'aging-backwards-bones',
+    title: '逆龄骨骼保护',
+    data: AGING_BACKWARDS_BONES_PLAN,
+    description: '结合站姿力量、伸展和扶椅动作的骨骼支持训练。',
+  },
 ];
 
 export {
+  AGING_BACKWARDS_BALANCE_PLAN,
+  AGING_BACKWARDS_BONES_PLAN,
+  AGING_BACKWARDS_ENERGY_PLAN,
+  AGING_BACKWARDS_JOINTS_PLAN,
+  AGING_BACKWARDS_MOBILITY_PLAN,
+  AGING_BACKWARDS_PAIN_RELIEF_PLAN,
+  AGING_BACKWARDS_POSTURE_PLAN,
+  AGING_BACKWARDS_WEIGHT_LOSS_PLAN,
   BOOK_FULL_BODY_STRETCH_PLAN,
   BOOK_LOWER_BACK_RELIEF_PLAN,
   BOOK_NECK_SHOULDER_RELIEF_PLAN,
