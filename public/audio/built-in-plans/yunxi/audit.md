@@ -1,11 +1,11 @@
 # Built-In Plan Audio Audit
 
-Generated: 2026-06-28T03:49:08.054Z
+Generated: 2026-06-28T04:20:03.297Z
 Rename mode: no
 
 ## Counts
 
-- already-structured: 520
+- already-structured: 637
 
 ## Rows
 
@@ -528,6 +528,123 @@ Rename mode: no
 | already-structured | planP | exercise-name   | 1       | 14       | 右髋站姿强化               | name         |              | planP-s1-e14-name.mp3    |
 | already-structured | planP | exercise        | 1       | 15       | 侧向和向上延伸             | description  |              | planP-s1-e15.mp3         |
 | already-structured | planP | exercise-name   | 1       | 15       | 侧向和向上延伸             | name         |              | planP-s1-e15-name.mp3    |
+| already-structured | planQ | section         | 1       |          | 大腿前侧和髋部             | section-name |              | planQ-s1.mp3             |
+| already-structured | planQ | exercise        | 1       | 1        | 左侧髋屈肌侧卧拉伸         | description  |              | planQ-s1-e1.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 1        | 左侧髋屈肌侧卧拉伸         | name         |              | planQ-s1-e1-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 2        | 右侧髋屈肌侧卧拉伸         | description  |              | planQ-s1-e2.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 2        | 右侧髋屈肌侧卧拉伸         | name         |              | planQ-s1-e2-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 3        | 左腿站姿主动屈膝           | description  |              | planQ-s1-e3.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 3        | 左腿站姿主动屈膝           | name         |              | planQ-s1-e3-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 4        | 右腿站姿主动屈膝           | description  |              | planQ-s1-e4.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 4        | 右腿站姿主动屈膝           | name         |              | planQ-s1-e4-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 5        | 动态屈膝坐                 | description  |              | planQ-s1-e5.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 5        | 动态屈膝坐                 | name         |              | planQ-s1-e5-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 6        | 左侧前倾拉伸               | description  |              | planQ-s1-e6.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 6        | 左侧前倾拉伸               | name         |              | planQ-s1-e6-name.mp3     |
+| already-structured | planQ | exercise        | 1       | 7        | 右侧前倾拉伸               | description  |              | planQ-s1-e7.mp3          |
+| already-structured | planQ | exercise-name   | 1       | 7        | 右侧前倾拉伸               | name         |              | planQ-s1-e7-name.mp3     |
+| already-structured | planQ | section         | 2       |          | 大腿内侧                   | section-name |              | planQ-s2.mp3             |
+| already-structured | planQ | exercise        | 2       | 1        | 动态坐式跨坐               | description  |              | planQ-s2-e1.mp3          |
+| already-structured | planQ | exercise-name   | 2       | 1        | 动态坐式跨坐               | name         |              | planQ-s2-e1-name.mp3     |
+| already-structured | planQ | exercise        | 2       | 2        | 蛙式跨坐                   | description  |              | planQ-s2-e2.mp3          |
+| already-structured | planQ | exercise-name   | 2       | 2        | 蛙式跨坐                   | name         |              | planQ-s2-e2-name.mp3     |
+| already-structured | planQ | exercise        | 2       | 3        | 蝴蝶式体前屈               | description  |              | planQ-s2-e3.mp3          |
+| already-structured | planQ | exercise-name   | 2       | 3        | 蝴蝶式体前屈               | name         |              | planQ-s2-e3-name.mp3     |
+| already-structured | planQ | exercise        | 2       | 4        | 左腿站姿侧抬               | description  |              | planQ-s2-e4.mp3          |
+| already-structured | planQ | exercise-name   | 2       | 4        | 左腿站姿侧抬               | name         |              | planQ-s2-e4-name.mp3     |
+| already-structured | planQ | exercise        | 2       | 5        | 右腿站姿侧抬               | description  |              | planQ-s2-e5.mp3          |
+| already-structured | planQ | exercise-name   | 2       | 5        | 右腿站姿侧抬               | name         |              | planQ-s2-e5-name.mp3     |
+| already-structured | planQ | section         | 3       |          | 小腿和足部                 | section-name |              | planQ-s3.mp3             |
+| already-structured | planQ | exercise        | 3       | 1        | 左侧屈膝脚跟按压           | description  |              | planQ-s3-e1.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 1        | 左侧屈膝脚跟按压           | name         |              | planQ-s3-e1-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 2        | 右侧屈膝脚跟按压           | description  |              | planQ-s3-e2.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 2        | 右侧屈膝脚跟按压           | name         |              | planQ-s3-e2-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 3        | 左侧腓肠肌拉伸             | description  |              | planQ-s3-e3.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 3        | 左侧腓肠肌拉伸             | name         |              | planQ-s3-e3-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 4        | 右侧腓肠肌拉伸             | description  |              | planQ-s3-e4.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 4        | 右侧腓肠肌拉伸             | name         |              | planQ-s3-e4-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 5        | 左脚脚踝屈伸               | description  |              | planQ-s3-e5.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 5        | 左脚脚踝屈伸               | name         |              | planQ-s3-e5-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 6        | 右脚脚踝屈伸               | description  |              | planQ-s3-e6.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 6        | 右脚脚踝屈伸               | name         |              | planQ-s3-e6-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 7        | 左足底按摩                 | description  |              | planQ-s3-e7.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 7        | 左足底按摩                 | name         |              | planQ-s3-e7-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 8        | 右足底按摩                 | description  |              | planQ-s3-e8.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 8        | 右足底按摩                 | name         |              | planQ-s3-e8-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 9        | 左脚踝转动                 | description  |              | planQ-s3-e9.mp3          |
+| already-structured | planQ | exercise-name   | 3       | 9        | 左脚踝转动                 | name         |              | planQ-s3-e9-name.mp3     |
+| already-structured | planQ | exercise        | 3       | 10       | 右脚踝转动                 | description  |              | planQ-s3-e10.mp3         |
+| already-structured | planQ | exercise-name   | 3       | 10       | 右脚踝转动                 | name         |              | planQ-s3-e10-name.mp3    |
+| already-structured | planR | section         | 1       |          | 力量唤醒                   | section-name |              | planR-s1.mp3             |
+| already-structured | planR | exercise        | 1       | 1        | 靠墙下蹲                   | description  |              | planR-s1-e1.mp3          |
+| already-structured | planR | exercise-name   | 1       | 1        | 靠墙下蹲                   | name         |              | planR-s1-e1-name.mp3     |
+| already-structured | planR | exercise        | 1       | 2        | 静态臀桥                   | description  |              | planR-s1-e2.mp3          |
+| already-structured | planR | exercise-name   | 1       | 2        | 静态臀桥                   | name         |              | planR-s1-e2-name.mp3     |
+| already-structured | planR | exercise        | 1       | 3        | 左侧徒手单腿蹲             | description  |              | planR-s1-e3.mp3          |
+| already-structured | planR | exercise-name   | 1       | 3        | 左侧徒手单腿蹲             | name         |              | planR-s1-e3-name.mp3     |
+| already-structured | planR | exercise        | 1       | 4        | 右侧徒手单腿蹲             | description  |              | planR-s1-e4.mp3          |
+| already-structured | planR | exercise-name   | 1       | 4        | 右侧徒手单腿蹲             | name         |              | planR-s1-e4-name.mp3     |
+| already-structured | planR | exercise        | 1       | 5        | 左侧侧平板抬腿             | description  |              | planR-s1-e5.mp3          |
+| already-structured | planR | exercise-name   | 1       | 5        | 左侧侧平板抬腿             | name         |              | planR-s1-e5-name.mp3     |
+| already-structured | planR | exercise        | 1       | 6        | 右侧侧平板抬腿             | description  |              | planR-s1-e6.mp3          |
+| already-structured | planR | exercise-name   | 1       | 6        | 右侧侧平板抬腿             | name         |              | planR-s1-e6-name.mp3     |
+| already-structured | planR | section         | 2       |          | 低冲击有氧                 | section-name |              | planR-s2.mp3             |
+| already-structured | planR | exercise        | 2       | 1        | 上下踏板                   | description  |              | planR-s2-e1.mp3          |
+| already-structured | planR | exercise-name   | 2       | 1        | 上下踏板                   | name         |              | planR-s2-e1-name.mp3     |
+| already-structured | planR | exercise        | 2       | 2        | 原地跑                     | description  |              | planR-s2-e2.mp3          |
+| already-structured | planR | exercise-name   | 2       | 2        | 原地跑                     | name         |              | planR-s2-e2-name.mp3     |
+| already-structured | planR | section         | 3       |          | 静态拉伸                   | section-name |              | planR-s3.mp3             |
+| already-structured | planR | exercise        | 3       | 1        | 左侧大腿前侧拉伸           | description  |              | planR-s3-e1.mp3          |
+| already-structured | planR | exercise-name   | 3       | 1        | 左侧大腿前侧拉伸           | name         |              | planR-s3-e1-name.mp3     |
+| already-structured | planR | exercise        | 3       | 2        | 右侧大腿前侧拉伸           | description  |              | planR-s3-e2.mp3          |
+| already-structured | planR | exercise-name   | 3       | 2        | 右侧大腿前侧拉伸           | name         |              | planR-s3-e2-name.mp3     |
+| already-structured | planR | exercise        | 3       | 3        | 蛙式内侧拉伸               | description  |              | planR-s3-e3.mp3          |
+| already-structured | planR | exercise-name   | 3       | 3        | 蛙式内侧拉伸               | name         |              | planR-s3-e3-name.mp3     |
+| already-structured | planR | exercise        | 3       | 4        | 左侧小腿后侧拉伸           | description  |              | planR-s3-e4.mp3          |
+| already-structured | planR | exercise-name   | 3       | 4        | 左侧小腿后侧拉伸           | name         |              | planR-s3-e4-name.mp3     |
+| already-structured | planR | exercise        | 3       | 5        | 右侧小腿后侧拉伸           | description  |              | planR-s3-e5.mp3          |
+| already-structured | planR | exercise-name   | 3       | 5        | 右侧小腿后侧拉伸           | name         |              | planR-s3-e5-name.mp3     |
+| already-structured | planS | section         | 1       |          | 单侧力量                   | section-name |              | planS-s1.mp3             |
+| already-structured | planS | exercise        | 1       | 1        | 左腿后撤弓步               | description  |              | planS-s1-e1.mp3          |
+| already-structured | planS | exercise-name   | 1       | 1        | 左腿后撤弓步               | name         |              | planS-s1-e1-name.mp3     |
+| already-structured | planS | exercise        | 1       | 2        | 右腿后撤弓步               | description  |              | planS-s1-e2.mp3          |
+| already-structured | planS | exercise-name   | 1       | 2        | 右腿后撤弓步               | name         |              | planS-s1-e2-name.mp3     |
+| already-structured | planS | exercise        | 1       | 3        | 左侧单腿臀桥               | description  |              | planS-s1-e3.mp3          |
+| already-structured | planS | exercise-name   | 1       | 3        | 左侧单腿臀桥               | name         |              | planS-s1-e3-name.mp3     |
+| already-structured | planS | exercise        | 1       | 4        | 右侧单腿臀桥               | description  |              | planS-s1-e4.mp3          |
+| already-structured | planS | exercise-name   | 1       | 4        | 右侧单腿臀桥               | name         |              | planS-s1-e4-name.mp3     |
+| already-structured | planS | exercise        | 1       | 5        | 左侧保加利亚深蹲           | description  |              | planS-s1-e5.mp3          |
+| already-structured | planS | exercise-name   | 1       | 5        | 左侧保加利亚深蹲           | name         |              | planS-s1-e5-name.mp3     |
+| already-structured | planS | exercise        | 1       | 6        | 右侧保加利亚深蹲           | description  |              | planS-s1-e6.mp3          |
+| already-structured | planS | exercise-name   | 1       | 6        | 右侧保加利亚深蹲           | name         |              | planS-s1-e6-name.mp3     |
+| already-structured | planS | exercise        | 1       | 7        | 左侧蚌式支撑开合           | description  |              | planS-s1-e7.mp3          |
+| already-structured | planS | exercise-name   | 1       | 7        | 左侧蚌式支撑开合           | name         |              | planS-s1-e7-name.mp3     |
+| already-structured | planS | exercise        | 1       | 8        | 右侧蚌式支撑开合           | description  |              | planS-s1-e8.mp3          |
+| already-structured | planS | exercise-name   | 1       | 8        | 右侧蚌式支撑开合           | name         |              | planS-s1-e8-name.mp3     |
+| already-structured | planS | section         | 2       |          | 塑形有氧                   | section-name |              | planS-s2.mp3             |
+| already-structured | planS | exercise        | 2       | 1        | 开合跳                     | description  |              | planS-s2-e1.mp3          |
+| already-structured | planS | exercise-name   | 2       | 1        | 开合跳                     | name         |              | planS-s2-e1-name.mp3     |
+| already-structured | planS | exercise        | 2       | 2        | 原地踏步恢复               | description  |              | planS-s2-e2.mp3          |
+| already-structured | planS | exercise-name   | 2       | 2        | 原地踏步恢复               | name         |              | planS-s2-e2-name.mp3     |
+| already-structured | planS | exercise        | 2       | 3        | 滑雪跳                     | description  |              | planS-s2-e3.mp3          |
+| already-structured | planS | exercise-name   | 2       | 3        | 滑雪跳                     | name         |              | planS-s2-e3-name.mp3     |
+| already-structured | planS | exercise        | 2       | 4        | 原地踏步恢复               | description  |              | planS-s2-e4.mp3          |
+| already-structured | planS | exercise-name   | 2       | 4        | 原地踏步恢复               | name         |              | planS-s2-e4-name.mp3     |
+| already-structured | planS | exercise        | 2       | 5        | 提踵蹲跳                   | description  |              | planS-s2-e5.mp3          |
+| already-structured | planS | exercise-name   | 2       | 5        | 提踵蹲跳                   | name         |              | planS-s2-e5-name.mp3     |
+| already-structured | planS | exercise        | 2       | 6        | 原地踏步收尾               | description  |              | planS-s2-e6.mp3          |
+| already-structured | planS | exercise-name   | 2       | 6        | 原地踏步收尾               | name         |              | planS-s2-e6-name.mp3     |
+| already-structured | planS | section         | 3       |          | 拉伸收尾                   | section-name |              | planS-s3.mp3             |
+| already-structured | planS | exercise        | 3       | 1        | 蝴蝶式体前屈               | description  |              | planS-s3-e1.mp3          |
+| already-structured | planS | exercise-name   | 3       | 1        | 蝴蝶式体前屈               | name         |              | planS-s3-e1-name.mp3     |
+| already-structured | planS | exercise        | 3       | 2        | 左侧小腿后侧拉伸           | description  |              | planS-s3-e2.mp3          |
+| already-structured | planS | exercise-name   | 3       | 2        | 左侧小腿后侧拉伸           | name         |              | planS-s3-e2-name.mp3     |
+| already-structured | planS | exercise        | 3       | 3        | 右侧小腿后侧拉伸           | description  |              | planS-s3-e3.mp3          |
+| already-structured | planS | exercise-name   | 3       | 3        | 右侧小腿后侧拉伸           | name         |              | planS-s3-e3-name.mp3     |
+| already-structured | planS | exercise        | 3       | 4        | 左足底按摩                 | description  |              | planS-s3-e4.mp3          |
+| already-structured | planS | exercise-name   | 3       | 4        | 左足底按摩                 | name         |              | planS-s3-e4-name.mp3     |
+| already-structured | planS | exercise        | 3       | 5        | 右足底按摩                 | description  |              | planS-s3-e5.mp3          |
+| already-structured | planS | exercise-name   | 3       | 5        | 右足底按摩                 | name         |              | planS-s3-e5-name.mp3     |
 | already-structured | planC | periodic-prompt |         |          | 间歇拉伸已开启。           | fixed-prompt |              | periodic-enabled.mp3     |
 | already-structured | planC | periodic-prompt |         |          | 休息时间到了。第一个动作： | fixed-prompt |              | periodic-break-start.mp3 |
 | already-structured | planC | periodic-prompt |         |          | 休息结束，继续工作吧。     | fixed-prompt |              | periodic-break-end.mp3   |

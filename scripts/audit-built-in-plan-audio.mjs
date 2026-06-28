@@ -120,6 +120,27 @@ const PLAN_MODULES = [
     file: 'src/schemas/aging-backwards-plans.ts',
     exportName: 'AGING_BACKWARDS_BONES_PLAN',
   },
+  {
+    key: 'planQ',
+    id: 'leg-slimming-release',
+    title: '下肢线条放松',
+    file: 'src/schemas/leg-slimming-plans.ts',
+    exportName: 'LEG_SLIMMING_RELEASE_PLAN',
+  },
+  {
+    key: 'planR',
+    id: 'leg-slimming-beginner',
+    title: '梨形初阶减脂',
+    file: 'src/schemas/leg-slimming-plans.ts',
+    exportName: 'LEG_SLIMMING_BEGINNER_PLAN',
+  },
+  {
+    key: 'planS',
+    id: 'leg-slimming-sculpt',
+    title: '梨形高阶塑形',
+    file: 'src/schemas/leg-slimming-plans.ts',
+    exportName: 'LEG_SLIMMING_SCULPT_PLAN',
+  },
 ];
 
 const PERIODIC_PROMPTS = [

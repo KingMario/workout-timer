@@ -16,6 +16,11 @@ import {
 } from './book-stretch-plans';
 import { BREAK_PLAN } from './break-plan';
 import { DEFAULT_PLAN } from './default-plan';
+import {
+  LEG_SLIMMING_BEGINNER_PLAN,
+  LEG_SLIMMING_RELEASE_PLAN,
+  LEG_SLIMMING_SCULPT_PLAN,
+} from './leg-slimming-plans';
 import { MCKENZIE_PLAN } from './mckenzie-plan';
 import { SEATED_WORKOUT_PLAN } from './seated-workout-plan';
 import type { WorkoutPlan } from './workout-plan';
@@ -124,6 +129,24 @@ export const BUILT_IN_PLANS: BuiltInPlan[] = [
     data: AGING_BACKWARDS_BONES_PLAN,
     description: '结合站姿力量、伸展和扶椅动作的骨骼支持训练。',
   },
+  {
+    id: 'leg-slimming-release',
+    title: '下肢线条放松',
+    data: LEG_SLIMMING_RELEASE_PLAN,
+    description: '面向大腿、小腿和足部的梨形身材下肢放松拉伸。',
+  },
+  {
+    id: 'leg-slimming-beginner',
+    title: '梨形初阶减脂',
+    data: LEG_SLIMMING_BEGINNER_PLAN,
+    description: '结合基础力量、低冲击有氧和静态拉伸的初阶计划。',
+  },
+  {
+    id: 'leg-slimming-sculpt',
+    title: '梨形高阶塑形',
+    data: LEG_SLIMMING_SCULPT_PLAN,
+    description: '适合有训练基础人群的单侧力量、有氧和拉伸计划。',
+  },
 ];
 
 export {
@@ -140,6 +163,9 @@ export {
   BOOK_NECK_SHOULDER_RELIEF_PLAN,
   BOOK_RUNNER_RECOVERY_PLAN,
   DEFAULT_PLAN,
+  LEG_SLIMMING_BEGINNER_PLAN,
+  LEG_SLIMMING_RELEASE_PLAN,
+  LEG_SLIMMING_SCULPT_PLAN,
   MCKENZIE_PLAN,
   SEATED_WORKOUT_PLAN,
   BREAK_PLAN,

@@ -16,7 +16,10 @@ export type BuiltInPlanAudioKey =
   | 'planM'
   | 'planN'
   | 'planO'
-  | 'planP';
+  | 'planP'
+  | 'planQ'
+  | 'planR'
+  | 'planS';
 
 const BUILT_IN_AUDIO_BASE_PATH = 'audio/built-in-plans/yunxi';
 

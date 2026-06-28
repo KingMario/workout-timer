@@ -135,4 +135,35 @@ describe('built-in plan audio helpers', () => {
       expect.arrayContaining([expect.stringMatching(/[A-Za-z]/)]),
     );
   });
+
+  it('registers leg slimming plans with split side steps and structured audio', () => {
+    const planIds = BUILT_IN_PLANS.map((plan) => plan.id);
+
+    expect(planIds).toContain('leg-slimming-release');
+    expect(planIds).toContain('leg-slimming-beginner');
+    expect(planIds).toContain('leg-slimming-sculpt');
+
+    const release = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'leg-slimming-release',
+    );
+    const beginner = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'leg-slimming-beginner',
+    );
+
+    expect(release?.data[0].audio).toBe(
+      'audio/built-in-plans/yunxi/planQ-s1.mp3',
+    );
+    expect(release?.data[0].steps[0].nameAudio).toBe(
+      'audio/built-in-plans/yunxi/planQ-s1-e1-name.mp3',
+    );
+    expect(release?.data[0].steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: '左侧髋屈肌侧卧拉伸' }),
+        expect.objectContaining({ name: '右侧髋屈肌侧卧拉伸' }),
+      ]),
+    );
+    expect(beginner?.data[1].steps[0].audio).toBe(
+      'audio/built-in-plans/yunxi/planR-s2-e1.mp3',
+    );
+  });
 });
