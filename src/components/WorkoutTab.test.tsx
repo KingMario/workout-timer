@@ -39,7 +39,9 @@ type ScreenWithGetByTitle = typeof screen & {
   screen.getByRole('button', { name: new RegExp(t) });
 const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 const mockCancel = window.speechSynthesis.cancel as unknown as Mock;
+const mockFetch = vi.fn();
 const mockAudioSources: string[] = [];
+const mockDataAudioSources: string[] = [];
 const mockAudioInstances: AudioMock[] = [];
 let mockAudioMode: 'abort' | 'error' | 'play-success' | 'slow-start' = 'error';
 let mockDingStartCount = 0;
@@ -148,7 +150,9 @@ class AudioMock {
 
   set src(value: string) {
     this.currentSrc = value;
-    if (value && !value.startsWith('data:audio/')) {
+    if (value.startsWith('data:audio/')) {
+      mockDataAudioSources.push(value);
+    } else if (value) {
       mockAudioSources.push(value);
     }
   }
@@ -185,9 +189,12 @@ describe('WorkoutTab', () => {
     localStorage.clear();
     mockSpeak.mockClear();
     mockCancel.mockClear();
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue(new Response('', { status: 200 }));
     mockNoSleepEnable.mockClear();
     mockNoSleepDisable.mockClear();
     mockAudioSources.length = 0;
+    mockDataAudioSources.length = 0;
     mockAudioInstances.length = 0;
     mockDingStartCount = 0;
     mockDataAudioPlayCount = 0;
@@ -200,6 +207,7 @@ describe('WorkoutTab', () => {
       maxTouchPoints: 0,
     });
     vi.stubGlobal('Audio', AudioMock);
+    vi.stubGlobal('fetch', mockFetch);
     const audioWindow = window as unknown as {
       AudioContext: typeof AudioContext;
       webkitAudioContext: typeof AudioContext;
@@ -297,6 +305,44 @@ describe('WorkoutTab', () => {
     ).toBe(true);
     expect(
       [...preloadHrefs].some((href) => href.endsWith('/planA-s4-e4.mp3')),
+    ).toBe(true);
+  });
+
+  it('caches every built-in plan first section preview audio after page load', async () => {
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    await act(async () => {
+      window.dispatchEvent(new Event('load'));
+      vi.runOnlyPendingTimers();
+      await Promise.resolve();
+    });
+    await flushAsyncAudioCallbacks();
+
+    const fetchedUrls = mockFetch.mock.calls.map((call) => String(call[0]));
+    expect(fetchedUrls).toHaveLength(57);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planA-s1.mp3'),
+      ),
+    ).toBe(true);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planA-s1-e1-name.mp3'),
+      ),
+    ).toBe(true);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planA-s1-e1.mp3'),
+      ),
+    ).toBe(true);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planS-s1-e1.mp3'),
+      ),
     ).toBe(true);
   });
 
@@ -404,6 +450,45 @@ describe('WorkoutTab', () => {
     expect(mockDingStartCount).toBe(0);
   });
 
+  it('uses one double-ding HTMLAudio fallback at step transitions on Apple mobile devices', async () => {
+    mockAudioMode = 'play-success';
+    mockNavigatorAudioPlatform({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+    });
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+
+    await finishInitialRecordedSpeech();
+    await flushAsyncAudioCallbacks();
+    const singleDingUrl = mockDataAudioSources.at(-1);
+    const audioInstanceCountAfterSingleDing = mockAudioInstances.length;
+    expect(singleDingUrl).toMatch(/^data:audio\/wav;base64,/);
+
+    mockDataAudioPlayCount = 0;
+    mockDataAudioSources.length = 0;
+
+    await act(async () => {
+      vi.advanceTimersByTime(60000);
+    });
+    await flushAsyncAudioCallbacks();
+
+    expect(mockDataAudioPlayCount).toBe(1);
+    expect(mockDataAudioSources[0]).toMatch(/^data:audio\/wav;base64,/);
+    expect(mockDataAudioSources[0].length).toBeGreaterThan(
+      singleDingUrl?.length ?? 0,
+    );
+    expect(mockAudioInstances).toHaveLength(audioInstanceCountAfterSingleDing);
+    expect(mockDingStartCount).toBe(0);
+  });
+
   it('keeps NoSleep disabled while built-in AI MP3 starts because NoSleep media can conflict on mobile Safari', async () => {
     mockAudioMode = 'play-success';
 
@@ -416,11 +501,10 @@ describe('WorkoutTab', () => {
     });
     await flushAsyncAudioCallbacks();
 
-    // NoSleep is now lazy-loaded — disable is a no-op until enable runs,
-    // and enable is deferred until after recorded audio finishes so its
-    // media element does not collide with the workout MP3 playback.
+    // NoSleep enable is deferred until after recorded audio finishes so its
+    // media element does not collide with the workout MP3 playback. A disable
+    // may run here if the shared module-level NoSleep instance already exists.
     expect(mockNoSleepEnable).not.toHaveBeenCalled();
-    expect(mockNoSleepDisable).not.toHaveBeenCalled();
 
     await finishInitialRecordedSpeech();
     await flushAsyncAudioCallbacks();

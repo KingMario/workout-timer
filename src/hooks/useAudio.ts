@@ -6,9 +6,12 @@ const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
 const RECORDED_AUDIO_START_TIMEOUT_MS = 8000;
 const DING_FREQUENCY_HZ = 880;
 const DING_DURATION_SECONDS = 0.5;
+const DING_REPEAT_DELAY_SECONDS = 0.3;
 const DING_SAMPLE_RATE = 22050;
+const SERVICE_WORKER_READY_TIMEOUT_MS = 3000;
+const cachedAudioFetchPaths = new Set<string>();
 const preloadedAudioPaths = new Set<string>();
-let dingDataUrl: string | null = null;
+const dingDataUrls = new Map<number, string>();
 
 type NoSleepLike = {
   enable: () => Promise<void> | void;
@@ -57,12 +60,15 @@ const writeAscii = (view: DataView, offset: number, value: string) => {
   }
 };
 
-const getDingDataUrl = () => {
-  if (dingDataUrl) {
-    return dingDataUrl;
+const getDingDataUrl = (dingCount = 1) => {
+  const cached = dingDataUrls.get(dingCount);
+  if (cached) {
+    return cached;
   }
 
-  const sampleCount = Math.floor(DING_DURATION_SECONDS * DING_SAMPLE_RATE);
+  const totalDuration =
+    DING_DURATION_SECONDS + (dingCount - 1) * DING_REPEAT_DELAY_SECONDS;
+  const sampleCount = Math.floor(totalDuration * DING_SAMPLE_RATE);
   const dataSize = sampleCount * 2;
   const buffer = new ArrayBuffer(44 + dataSize);
   const view = new DataView(buffer);
@@ -83,9 +89,18 @@ const getDingDataUrl = () => {
 
   for (let i = 0; i < sampleCount; i += 1) {
     const time = i / DING_SAMPLE_RATE;
-    const envelope =
-      0.5 * Math.exp((Math.log(0.00001 / 0.5) * time) / DING_DURATION_SECONDS);
-    const sample = Math.sin(2 * Math.PI * DING_FREQUENCY_HZ * time) * envelope;
+    let sample = 0;
+    for (let dingIndex = 0; dingIndex < dingCount; dingIndex += 1) {
+      const localTime = time - dingIndex * DING_REPEAT_DELAY_SECONDS;
+      if (localTime < 0 || localTime > DING_DURATION_SECONDS) {
+        continue;
+      }
+      const envelope =
+        0.5 *
+        Math.exp((Math.log(0.00001 / 0.5) * localTime) / DING_DURATION_SECONDS);
+      sample +=
+        Math.sin(2 * Math.PI * DING_FREQUENCY_HZ * localTime) * envelope;
+    }
     view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 32767, true);
   }
 
@@ -95,8 +110,69 @@ const getDingDataUrl = () => {
   for (let i = 0; i < bytes.length; i += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
-  dingDataUrl = `data:audio/wav;base64,${btoa(binary)}`;
-  return dingDataUrl;
+  const dataUrl = `data:audio/wav;base64,${btoa(binary)}`;
+  dingDataUrls.set(dingCount, dataUrl);
+  return dataUrl;
+};
+
+const playAppleMobileDing = async (audio: HTMLAudioElement, dingCount = 1) => {
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch {}
+  audio.src = getDingDataUrl(dingCount);
+  audio.preload = 'auto';
+  audio.setAttribute?.('playsinline', 'true');
+  await audio.play();
+};
+
+const waitForServiceWorkerRuntimeCache = async () => {
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    typeof window === 'undefined' ||
+    !('serviceWorker' in navigator)
+  ) {
+    return;
+  }
+
+  const timeout = () =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, SERVICE_WORKER_READY_TIMEOUT_MS);
+    });
+
+  await Promise.race([
+    navigator.serviceWorker.ready.then(() => undefined).catch(() => undefined),
+    timeout(),
+  ]);
+
+  if (navigator.serviceWorker.controller) {
+    return;
+  }
+
+  let cleanupControllerChange = () => {};
+  const controllerChanged = new Promise<void>((resolve) => {
+    const handleControllerChange = () => {
+      cleanupControllerChange();
+      resolve();
+    };
+    cleanupControllerChange = () => {
+      navigator.serviceWorker.removeEventListener(
+        'controllerchange',
+        handleControllerChange,
+      );
+    };
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      handleControllerChange,
+    );
+  });
+
+  await Promise.race([
+    controllerChanged,
+    timeout().then(() => {
+      cleanupControllerChange();
+    }),
+  ]);
 };
 
 const enableNoSleepModule = async () => {
@@ -239,6 +315,29 @@ export function useAudio(ttsEnabled = true) {
     });
   }, []);
 
+  const cacheRecordedAudio = useCallback(
+    async (audioPath: string | string[]) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const audioPaths = Array.isArray(audioPath) ? audioPath : [audioPath];
+      await waitForServiceWorkerRuntimeCache();
+      await Promise.allSettled(
+        audioPaths.filter(Boolean).map(async (path) => {
+          const resolvedPath = resolveAudioPath(path);
+          if (cachedAudioFetchPaths.has(resolvedPath)) {
+            return;
+          }
+
+          cachedAudioFetchPaths.add(resolvedPath);
+          await fetch(resolvedPath);
+        }),
+      );
+    },
+    [],
+  );
+
   const cancelCurrentAudio = useCallback(() => {
     if (currentAudioCancelRef.current) {
       currentAudioCancelRef.current();
@@ -347,10 +446,10 @@ export function useAudio(ttsEnabled = true) {
     }
     try {
       if (isAppleMobileDevice()) {
-        const audio = new Audio(getDingDataUrl());
-        audio.preload = 'auto';
-        audio.setAttribute?.('playsinline', 'true');
-        await audio.play();
+        const audio = getRecordedAudio();
+        if (audio) {
+          await playAppleMobileDing(audio);
+        }
         return;
       }
 
@@ -389,7 +488,7 @@ export function useAudio(ttsEnabled = true) {
     } catch {
       // ignore
     }
-  }, [initAudio]);
+  }, [getRecordedAudio, initAudio]);
 
   const tryPlayFile = useCallback(
     async (
@@ -701,12 +800,19 @@ export function useAudio(ttsEnabled = true) {
       clearTimeout(dingTimeoutRef.current);
       dingTimeoutRef.current = null;
     }
+    if (isAppleMobileDevice()) {
+      const audio = getRecordedAudio();
+      if (audio) {
+        void playAppleMobileDing(audio, 2);
+      }
+      return;
+    }
     playDing();
     dingTimeoutRef.current = window.setTimeout(() => {
       playDing();
       dingTimeoutRef.current = null;
     }, 300);
-  }, [playDing]);
+  }, [getRecordedAudio, playDing]);
 
   const cancelAll = useCallback(() => {
     playbackIdRef.current += 1;
@@ -738,6 +844,7 @@ export function useAudio(ttsEnabled = true) {
   return {
     initAudio,
     unlockAudio,
+    cacheRecordedAudio,
     preloadRecordedAudio,
     playDing,
     speak,

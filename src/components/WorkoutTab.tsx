@@ -28,6 +28,11 @@ interface Step {
 
 type Section = WorkoutPlan[number];
 
+type WindowWithOptionalIdleCallback = Window & {
+  requestIdleCallback?: Window['requestIdleCallback'];
+  cancelIdleCallback?: Window['cancelIdleCallback'];
+};
+
 const formatTime = (sec: number) => {
   sec = Math.max(0, Math.floor(sec));
   const m = Math.floor(sec / 60);
@@ -61,6 +66,76 @@ const collectPlanAudioPaths = (sections: Section[]) => {
     });
   });
   return [...paths];
+};
+
+const collectFirstSectionPreviewAudioPaths = (sections: Section[]) => {
+  const paths = new Set<string>();
+  const section = sections[0];
+  const firstStep = section?.steps[0];
+
+  if (section?.audio) {
+    paths.add(section.audio);
+  }
+  if (firstStep?.nameAudio) {
+    paths.add(firstStep.nameAudio);
+  }
+  if (firstStep?.audio) {
+    paths.add(firstStep.audio);
+  }
+
+  return [...paths];
+};
+
+const scheduleAfterPageLoad = (callback: () => void) => {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  let timeoutId: number | null = null;
+  let idleId: number | null = null;
+  let cancelled = false;
+  const idleWindow = window as WindowWithOptionalIdleCallback;
+
+  const schedule = () => {
+    if (cancelled) {
+      return;
+    }
+
+    if (idleWindow.requestIdleCallback) {
+      idleId = idleWindow.requestIdleCallback(
+        () => {
+          if (!cancelled) {
+            callback();
+          }
+        },
+        { timeout: 3000 },
+      );
+      return;
+    }
+
+    timeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        callback();
+      }
+    }, 0);
+  };
+
+  if (document.readyState === 'complete') {
+    schedule();
+  } else {
+    window.addEventListener('load', schedule, { once: true });
+  }
+
+  return () => {
+    cancelled = true;
+    window.removeEventListener('load', schedule);
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+    if (idleId !== null && idleWindow.cancelIdleCallback) {
+      idleWindow.cancelIdleCallback(idleId);
+    }
+  };
 };
 
 export default function WorkoutTab() {
@@ -115,6 +190,7 @@ export default function WorkoutTab() {
   const {
     unlockAudio,
     preloadRecordedAudio,
+    cacheRecordedAudio,
     speakSegments,
     scheduleSpeak,
     playDoubleDing,
@@ -130,6 +206,24 @@ export default function WorkoutTab() {
       preloadRecordedAudio(audioPaths);
     }
   }, [planSections, preloadRecordedAudio]);
+
+  useEffect(
+    () =>
+      scheduleAfterPageLoad(() => {
+        void import('../schemas').then(({ BUILT_IN_PLANS }) => {
+          const audioPaths = new Set<string>();
+          BUILT_IN_PLANS.forEach((plan) => {
+            collectFirstSectionPreviewAudioPaths(plan.data).forEach((path) => {
+              audioPaths.add(path);
+            });
+          });
+          if (audioPaths.size > 0) {
+            void cacheRecordedAudio([...audioPaths]);
+          }
+        });
+      }),
+    [cacheRecordedAudio],
+  );
 
   const getStepSpeechSegments = useCallback((step: Step): SpeechSegment[] => {
     const segments: SpeechSegment[] = [];
