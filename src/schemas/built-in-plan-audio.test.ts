@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BUILT_IN_PLANS } from '.';
 import {
   getBuiltInSectionAudioPath,
   getBuiltInStepAudioPath,
@@ -59,6 +60,36 @@ describe('built-in plan audio helpers', () => {
     );
     expect(DEFAULT_PLAN[1].steps[9].audio).toBe(
       'audio/built-in-plans/yunxi/planA-s2-e10.mp3',
+    );
+  });
+
+  it('registers book-derived stretch plans as built-in plans with structured audio', () => {
+    const planIds = BUILT_IN_PLANS.map((plan) => plan.id);
+
+    expect(planIds).toContain('book-full-body-stretch');
+    expect(planIds).toContain('book-neck-shoulder-relief');
+    expect(planIds).toContain('book-lower-back-relief');
+    expect(planIds).toContain('book-runner-recovery');
+
+    const fullBody = BUILT_IN_PLANS.find(
+      (plan) => plan.id === 'book-full-body-stretch',
+    );
+
+    expect(fullBody?.data[0].audio).toBe(
+      'audio/built-in-plans/yunxi/planE-s1.mp3',
+    );
+    expect(fullBody?.data[2].steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: '站姿屈髋肌拉伸 左侧' }),
+        expect.objectContaining({ name: '站姿屈髋肌拉伸 右侧' }),
+      ]),
+    );
+    expect(
+      fullBody?.data
+        .flatMap((section) => section.steps)
+        .map((step) => step.desc),
+    ).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('各半时间')]),
     );
   });
 });

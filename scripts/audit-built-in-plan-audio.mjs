@@ -36,6 +36,34 @@ const PLAN_MODULES = [
     file: 'src/schemas/mckenzie-plan.ts',
     exportName: 'MCKENZIE_PLAN',
   },
+  {
+    key: 'planE',
+    id: 'book-full-body-stretch',
+    title: '全身动态拉伸',
+    file: 'src/schemas/book-stretch-plans.ts',
+    exportName: 'BOOK_FULL_BODY_STRETCH_PLAN',
+  },
+  {
+    key: 'planF',
+    id: 'book-neck-shoulder-relief',
+    title: '肩颈压力缓解',
+    file: 'src/schemas/book-stretch-plans.ts',
+    exportName: 'BOOK_NECK_SHOULDER_RELIEF_PLAN',
+  },
+  {
+    key: 'planG',
+    id: 'book-lower-back-relief',
+    title: '下腰背放松',
+    file: 'src/schemas/book-stretch-plans.ts',
+    exportName: 'BOOK_LOWER_BACK_RELIEF_PLAN',
+  },
+  {
+    key: 'planH',
+    id: 'book-runner-recovery',
+    title: '跑后臀腿恢复',
+    file: 'src/schemas/book-stretch-plans.ts',
+    exportName: 'BOOK_RUNNER_RECOVERY_PLAN',
+  },
 ];
 
 const PERIODIC_PROMPTS = [
@@ -71,15 +99,32 @@ const indexFilesByNormalizedBase = (files) => {
   return index;
 };
 
-const extractArrayLiteral = (source, file) => {
-  const match = source.match(
-    /(?:export\s+)?const\s+\w+\s*:\s*WorkoutPlan\s*=\s*\[/,
-  );
-  if (!match || match.index === undefined) {
-    throw new Error(`Could not find WorkoutPlan array in ${file}`);
+const extractArrayLiteral = (source, file, exportName) => {
+  const rawName = exportName.replace(/_PLAN$/, '');
+  const candidates = [
+    rawName.startsWith('RAW_') ? rawName : `RAW_${rawName}_PLAN`,
+    rawName.startsWith('RAW_') ? rawName : `RAW_${rawName}`,
+    exportName,
+  ];
+
+  const match = candidates
+    .map((candidate) => ({
+      candidate,
+      match: source.match(
+        new RegExp(
+          `(?:export\\s+)?const\\s+${candidate}\\s*:\\s*WorkoutPlan\\s*=\\s*\\[`,
+        ),
+      ),
+    }))
+    .find(({ match }) => match && match.index !== undefined);
+
+  if (!match || match.match?.index === undefined) {
+    throw new Error(
+      `Could not find WorkoutPlan array for ${exportName} in ${file}`,
+    );
   }
 
-  const start = match.index + match[0].lastIndexOf('[');
+  const start = match.match.index + match.match[0].lastIndexOf('[');
   let depth = 0;
   let inString = null;
   let escaping = false;
@@ -119,9 +164,9 @@ const extractArrayLiteral = (source, file) => {
   throw new Error(`Could not close WorkoutPlan array in ${file}`);
 };
 
-const loadPlan = ({ file }) => {
+const loadPlan = ({ file, exportName }) => {
   const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
-  const arrayLiteral = extractArrayLiteral(source, file);
+  const arrayLiteral = extractArrayLiteral(source, file, exportName);
   const plan = vm.runInNewContext(`(${arrayLiteral})`, {}, { filename: file });
   if (!Array.isArray(plan)) {
     throw new Error(`Could not load plan from ${file}`);

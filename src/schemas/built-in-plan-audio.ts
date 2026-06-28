@@ -1,6 +1,14 @@
 import type { WorkoutPlan } from './workout-plan';
 
-export type BuiltInPlanAudioKey = 'planA' | 'planB' | 'planC' | 'planD';
+export type BuiltInPlanAudioKey =
+  | 'planA'
+  | 'planB'
+  | 'planC'
+  | 'planD'
+  | 'planE'
+  | 'planF'
+  | 'planG'
+  | 'planH';
 
 const BUILT_IN_AUDIO_BASE_PATH = 'audio/built-in-plans/yunxi';
 
