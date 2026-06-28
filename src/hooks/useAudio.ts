@@ -704,6 +704,11 @@ export function useAudio(ttsEnabled = true) {
       }
 
       const playbackId = beginPlayback();
+      const finishSpeaking = () => {
+        if (isCurrentPlayback(playbackId)) {
+          setIsSpeaking(false);
+        }
+      };
       setIsSpeaking(true);
       if (onStart) {
         onStart();
@@ -715,22 +720,25 @@ export function useAudio(ttsEnabled = true) {
       });
       for (const segment of playableSegments) {
         if (!isCurrentPlayback(playbackId)) {
+          finishSpeaking();
           return;
         }
 
         const audioStatus = await playRecordedAudio(segment.audio, playbackId);
         if (audioStatus === 'cancelled' || !isCurrentPlayback(playbackId)) {
+          finishSpeaking();
           return;
         }
 
         if (!segment.audio && audioStatus === 'failed') {
           await speakText(segment.text);
           if (!isCurrentPlayback(playbackId)) {
+            finishSpeaking();
             return;
           }
         }
       }
-      setIsSpeaking(false);
+      finishSpeaking();
       playDing();
       if (onEnd) {
         if (endCallbackTimeoutRef.current) {

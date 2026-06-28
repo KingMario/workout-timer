@@ -346,7 +346,7 @@ describe('WorkoutTab', () => {
     ).toBe(true);
   });
 
-  it('fetches the remaining active plan MP3s when starting the workout', async () => {
+  it('fetches the remaining active plan MP3s during idle time after starting the workout', async () => {
     mockAudioMode = 'play-success';
 
     await act(async () => {
@@ -356,6 +356,13 @@ describe('WorkoutTab', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+    await flushAsyncAudioCallbacks();
+
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.runOnlyPendingTimers();
     });
     await flushAsyncAudioCallbacks();
 
@@ -583,6 +590,11 @@ describe('WorkoutTab', () => {
     expect(mockAudioInstances[0]?.pause).toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
     expect(mockSpeak).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByText(/剩余：59"/)).toBeInTheDocument();
 
     warnSpy.mockRestore();
   });

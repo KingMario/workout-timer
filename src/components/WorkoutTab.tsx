@@ -86,7 +86,7 @@ const collectFirstSectionPreviewAudioPaths = (sections: Section[]) => {
   return [...paths];
 };
 
-const scheduleAfterPageLoad = (callback: () => void) => {
+const scheduleDuringIdle = (callback: () => void) => {
   if (typeof window === 'undefined') {
     return () => {};
   }
@@ -96,28 +96,48 @@ const scheduleAfterPageLoad = (callback: () => void) => {
   let cancelled = false;
   const idleWindow = window as WindowWithOptionalIdleCallback;
 
-  const schedule = () => {
-    if (cancelled) {
-      return;
-    }
-
-    if (idleWindow.requestIdleCallback) {
-      idleId = idleWindow.requestIdleCallback(
-        () => {
-          if (!cancelled) {
-            callback();
-          }
-        },
-        { timeout: 3000 },
-      );
-      return;
-    }
-
+  if (idleWindow.requestIdleCallback) {
+    idleId = idleWindow.requestIdleCallback(
+      () => {
+        if (!cancelled) {
+          callback();
+        }
+      },
+      { timeout: 3000 },
+    );
+  } else {
     timeoutId = window.setTimeout(() => {
       if (!cancelled) {
         callback();
       }
     }, 0);
+  }
+
+  return () => {
+    cancelled = true;
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+    if (idleId !== null && idleWindow.cancelIdleCallback) {
+      idleWindow.cancelIdleCallback(idleId);
+    }
+  };
+};
+
+const scheduleAfterPageLoad = (callback: () => void) => {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  let cancelled = false;
+  let cleanupIdle = () => {};
+
+  const schedule = () => {
+    if (cancelled) {
+      return;
+    }
+
+    cleanupIdle = scheduleDuringIdle(callback);
   };
 
   if (document.readyState === 'complete') {
@@ -129,12 +149,7 @@ const scheduleAfterPageLoad = (callback: () => void) => {
   return () => {
     cancelled = true;
     window.removeEventListener('load', schedule);
-    if (timeoutId !== null) {
-      window.clearTimeout(timeoutId);
-    }
-    if (idleId !== null && idleWindow.cancelIdleCallback) {
-      idleWindow.cancelIdleCallback(idleId);
-    }
+    cleanupIdle();
   };
 };
 
@@ -386,7 +401,9 @@ export default function WorkoutTab() {
       await unlockAudio();
       const audioPaths = collectPlanAudioPaths(planSections);
       if (audioPaths.length > 0) {
-        void cacheRecordedAudio(audioPaths);
+        scheduleDuringIdle(() => {
+          void cacheRecordedAudio(audioPaths);
+        });
       }
       setIsRunning(true);
       const initialSegments = getStepSpeechSegments(steps[currentIdx]);
