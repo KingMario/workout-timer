@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import './globals.css';
 
 const geistSans = Geist({
@@ -20,6 +21,7 @@ const siteUrl =
 export const metadata: Metadata = {
   title: '灵动健身 - Mario Studio',
   description: 'FlexWorkout 健身计时器 — 简单、可定制的间歇训练计时器',
+  manifest: '/workout-timer/manifest.webmanifest',
   keywords: ['健身', '计时器', 'HIIT', '间歇训练', 'Workout Timer'],
   authors: [{ name: 'Mario' }],
   metadataBase: new URL(siteUrl),
@@ -52,6 +54,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -70,7 +76,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="zh">
+    <html lang="zh" suppressHydrationWarning>
       <head>
         <link rel="canonical" href={siteUrl} />
         <meta name="robots" content="index, follow" />
@@ -81,8 +87,10 @@ export default function RootLayout({
         />
       </head>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} text-gray-900 dark:text-gray-100 antialiased`}
       >
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

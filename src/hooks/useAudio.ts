@@ -7,6 +7,18 @@ const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
 const RECORDED_AUDIO_START_TIMEOUT_MS = 8000;
 const preloadedAudioPaths = new Set<string>();
 
+const isAbortError = (error: unknown) => {
+  if (error instanceof DOMException) {
+    return error.name === 'AbortError';
+  }
+
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  return 'name' in error && (error as { name?: unknown }).name === 'AbortError';
+};
+
 const resolveAudioPath = (filePath: string) => {
   if (ABSOLUTE_URL_PATTERN.test(filePath) || typeof window === 'undefined') {
     return filePath;
@@ -232,8 +244,6 @@ export function useAudio(ttsEnabled = true) {
           try {
             audio.pause();
             audio.currentTime = 0;
-            audio.removeAttribute('src');
-            audio.load();
           } catch {}
         };
 
@@ -283,7 +293,6 @@ export function useAudio(ttsEnabled = true) {
           audio.pause();
           audio.currentTime = 0;
           audio.src = resolvedPath;
-          audio.load();
         } catch {
           cleanup();
           resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
@@ -303,10 +312,17 @@ export function useAudio(ttsEnabled = true) {
             }
           })
           .catch((e) => {
-            console.warn(`Failed to play audio file ${resolvedPath}:`, e);
+            const wasAbort = isAbortError(e);
+            if (!wasAbort) {
+              console.warn(`Failed to play audio file ${resolvedPath}:`, e);
+            }
             cleanup();
             stopAudio();
-            resolve(isCurrentPlayback(playbackId) ? 'failed' : 'cancelled');
+            resolve(
+              isCurrentPlayback(playbackId) && !wasAbort
+                ? 'failed'
+                : 'cancelled',
+            );
           });
       });
     },

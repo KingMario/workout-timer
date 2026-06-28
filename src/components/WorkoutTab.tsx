@@ -128,13 +128,17 @@ export default function WorkoutTab() {
   }, []);
 
   const getSpeechNoSleepCallbacks = useCallback(
-    (segments: SpeechSegment[]) => {
+    (
+      segments: SpeechSegment[],
+      enableWhenDone = false,
+      disableWhenStarted = true,
+    ) => {
       if (!hasRecordedAudio(segments)) {
-        return {};
+        return enableWhenDone ? { onEnd: enableNoSleep } : {};
       }
 
       return {
-        onStart: disableNoSleep,
+        onStart: disableWhenStarted ? disableNoSleep : undefined,
         onEnd: enableNoSleep,
       };
     },
@@ -142,9 +146,20 @@ export default function WorkoutTab() {
   );
 
   const speakStep = useCallback(
-    (step: Step) => {
+    (
+      step: Step,
+      enableNoSleepWhenDone = false,
+      disableNoSleepWhenStarted = true,
+    ) => {
       const segments = getStepSpeechSegments(step);
-      speakSegments(segments, getSpeechNoSleepCallbacks(segments));
+      speakSegments(
+        segments,
+        getSpeechNoSleepCallbacks(
+          segments,
+          enableNoSleepWhenDone,
+          disableNoSleepWhenStarted,
+        ),
+      );
     },
     [getSpeechNoSleepCallbacks, getStepSpeechSegments, speakSegments],
   );
@@ -199,7 +214,6 @@ export default function WorkoutTab() {
   ]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
     const active = getActivePlan();
     if (active) {
@@ -212,7 +226,6 @@ export default function WorkoutTab() {
     planSections.forEach((s) => {
       initial[s.name] = s.defaultRounds;
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSectionRounds(initial);
     // reset when plan changes
     handleReset();
@@ -225,7 +238,6 @@ export default function WorkoutTab() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isRunning && !isSpeaking) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleNextStep();
     }
     return () => {
@@ -250,8 +262,17 @@ export default function WorkoutTab() {
         return;
       }
       setIsRunning(true);
-      enableNoSleep();
-      speakStep(steps[currentIdx]);
+      const initialSegments = getStepSpeechSegments(steps[currentIdx]);
+      if (hasRecordedAudio(initialSegments)) {
+        disableNoSleep();
+        speakSegments(
+          initialSegments,
+          getSpeechNoSleepCallbacks(initialSegments, true, false),
+        );
+      } else {
+        enableNoSleep();
+        speakSegments(initialSegments);
+      }
     } else {
       setIsRunning(false);
       disableNoSleep();
@@ -262,7 +283,9 @@ export default function WorkoutTab() {
     isRunning,
     isFinished,
     handleReset,
-    speakStep,
+    getStepSpeechSegments,
+    getSpeechNoSleepCallbacks,
+    speakSegments,
     steps,
     currentIdx,
     enableNoSleep,

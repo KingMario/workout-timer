@@ -1,0 +1,36 @@
+{
+  "name": "灵动健身 - Mario Studio",
+  "short_name": "灵动健身",
+  "description": "支持离线使用的健身与间歇拉伸计时器",
+  "start_url": "/workout-timer/",
+  "scope": "/workout-timer/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/workout-timer/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/workout-timer/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/workout-timer/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/workout-timer/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

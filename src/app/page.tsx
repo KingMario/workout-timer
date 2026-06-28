@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import React, { useState } from 'react';
+import InstallAppButton from '../components/InstallAppButton';
 import PeriodicTab from '../components/PeriodicTab';
 import WorkoutTab from '../components/WorkoutTab';
 
@@ -62,7 +63,7 @@ export default function WorkoutTimer() {
 
       {/* Header - tabs */}
       <header className="sticky top-0 z-[60] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 border-b border-gray-100 dark:border-zinc-800 shadow-sm">
-        <nav aria-label="功能切换">
+        <nav aria-label="功能切换" className="flex items-center gap-3 pr-10">
           <div
             role="tablist"
             aria-label="模式选择"
@@ -91,6 +92,7 @@ export default function WorkoutTimer() {
               间歇拉伸
             </button>
           </div>
+          <InstallAppButton disabled={!canUseApp} />
         </nav>
       </header>
 

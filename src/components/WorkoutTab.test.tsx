@@ -35,7 +35,7 @@ const mockSpeak = window.speechSynthesis.speak as unknown as Mock;
 const mockCancel = window.speechSynthesis.cancel as unknown as Mock;
 const mockAudioSources: string[] = [];
 const mockAudioInstances: AudioMock[] = [];
-let mockAudioMode: 'error' | 'play-success' | 'slow-start' = 'error';
+let mockAudioMode: 'abort' | 'error' | 'play-success' | 'slow-start' = 'error';
 let mockDingStartCount = 0;
 
 class AudioContextMock {
@@ -89,6 +89,12 @@ class AudioMock {
   constructor(src = '') {
     this.src = src;
     this.play.mockImplementation(() => {
+      if (mockAudioMode === 'abort') {
+        return Promise.reject(
+          new DOMException('The operation was aborted.', 'AbortError'),
+        );
+      }
+
       if (mockAudioMode === 'slow-start') {
         return new Promise<void>((resolve) => {
           this.resolvePlay = resolve;
@@ -244,7 +250,7 @@ describe('WorkoutTab', () => {
     expect(screen.getByRole('button', { name: /暂停/ })).toBeInTheDocument();
   });
 
-  it('pauses NoSleep while built-in recorded audio is playing', async () => {
+  it('keeps NoSleep disabled while built-in AI MP3 starts because NoSleep media can conflict on mobile Safari', async () => {
     mockAudioMode = 'play-success';
 
     await act(async () => {
@@ -255,7 +261,7 @@ describe('WorkoutTab', () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
     });
 
-    expect(mockNoSleepEnable).toHaveBeenCalledTimes(1);
+    expect(mockNoSleepEnable).not.toHaveBeenCalled();
     expect(mockNoSleepDisable).toHaveBeenCalledTimes(1);
 
     await finishInitialRecordedSpeech();
@@ -263,7 +269,7 @@ describe('WorkoutTab', () => {
       vi.advanceTimersByTime(300);
     });
 
-    expect(mockNoSleepEnable).toHaveBeenCalledTimes(2);
+    expect(mockNoSleepEnable).toHaveBeenCalledTimes(1);
   });
 
   it('does not use browser speech when built-in recorded audio times out', async () => {
@@ -286,11 +292,31 @@ describe('WorkoutTab', () => {
     });
 
     expect(mockAudioInstances[0]?.pause).toHaveBeenCalled();
-    expect(mockAudioInstances[0]?.removeAttribute).toHaveBeenCalledWith('src');
     expect(mockSpeak).not.toHaveBeenCalled();
   });
 
-  it('uses browser speech for custom plans without recorded audio', async () => {
+  it('treats aborted recorded audio playback as cancellation', async () => {
+    mockAudioMode = 'abort';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+    await act(async () => {});
+
+    expect(mockAudioInstances[0]?.play).toHaveBeenCalled();
+    expect(mockAudioInstances[0]?.pause).toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(mockSpeak).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+
+  it('enables NoSleep immediately for custom TTS plans without built-in AI MP3 media', async () => {
     localStorage.setItem(
       'mario_workout_timer_active_plan',
       JSON.stringify({
