@@ -1,15 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist } from 'next/font/google';
 import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import './globals.css';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
   subsets: ['latin'],
 });
 
@@ -88,7 +83,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} text-gray-900 dark:text-gray-100 antialiased`}
+        className={`${geistSans.variable} text-gray-900 dark:text-gray-100 antialiased`}
       >
         <ServiceWorkerRegistration />
         {children}

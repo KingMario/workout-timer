@@ -1,7 +1,7 @@
 # Fix useAudio async race + slim SW precache
 
 **Date:** 2026-06-28
-**Status:** Design — pending user review (revision 2)
+**Status:** Design — pending user review (revision 3)
 
 ## Background
 

@@ -1,11 +1,92 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import NoSleep from 'nosleep.js';
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:|^\//i;
 const RECORDED_AUDIO_START_TIMEOUT_MS = 8000;
 const preloadedAudioPaths = new Set<string>();
+
+type NoSleepLike = {
+  enable: () => Promise<void> | void;
+  disable: () => void;
+};
+
+// Module-level NoSleep singleton — shared across all useAudio consumers
+// (WorkoutTab, PeriodicTab, etc.) so a disable from any hook can cancel
+// any in-flight or completed enable, regardless of which instance owns
+// the underlying NoSleep object.
+const noSleepModule: {
+  importPromise: Promise<typeof import('nosleep.js').default> | null;
+  instance: NoSleepLike | null;
+  generation: number;
+  desiredEnabled: boolean;
+} = {
+  importPromise: null,
+  instance: null,
+  generation: 0,
+  desiredEnabled: false,
+};
+
+const loadNoSleep = () => {
+  if (!noSleepModule.importPromise) {
+    noSleepModule.importPromise = import('nosleep.js').then(
+      (mod) => mod.default,
+    );
+  }
+  return noSleepModule.importPromise;
+};
+
+const enableNoSleepModule = async () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const generation = ++noSleepModule.generation;
+  noSleepModule.desiredEnabled = true;
+  if (!noSleepModule.instance) {
+    try {
+      const NoSleepCtor = await loadNoSleep();
+      // A disable that arrived during import — abort before creating the
+      // NoSleep instance so we don't leak one.
+      if (generation !== noSleepModule.generation) {
+        return;
+      }
+      noSleepModule.instance = new NoSleepCtor();
+    } catch {
+      return;
+    }
+  }
+
+  if (generation !== noSleepModule.generation) {
+    return;
+  }
+
+  try {
+    await noSleepModule.instance.enable();
+    // Post-await defensive disable: if a disable arrived during
+    // instance.enable(), disable() already ran synchronously and is the
+    // primary fix. The rollback here covers the narrow race where
+    // disable() completed before enable() actually toggled media state.
+    if (
+      generation !== noSleepModule.generation &&
+      !noSleepModule.desiredEnabled
+    ) {
+      try {
+        noSleepModule.instance.disable();
+      } catch {}
+    }
+  } catch {}
+};
+
+const disableNoSleepModule = () => {
+  noSleepModule.generation += 1;
+  noSleepModule.desiredEnabled = false;
+  if (noSleepModule.instance) {
+    try {
+      noSleepModule.instance.disable();
+    } catch {}
+  }
+};
 
 const isAbortError = (error: unknown) => {
   if (error instanceof DOMException) {
@@ -53,7 +134,7 @@ export function useAudio(ttsEnabled = true) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const speakTimeoutRef = useRef<number | null>(null);
   const dingTimeoutRef = useRef<number | null>(null);
-  const noSleepRef = useRef<NoSleep | null>(null);
+  const endCallbackTimeoutRef = useRef<number | null>(null);
   const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
   const playbackIdRef = useRef(0);
   const currentAudioCancelRef = useRef<(() => void) | null>(null);
@@ -105,6 +186,10 @@ export function useAudio(ttsEnabled = true) {
   const beginPlayback = useCallback(() => {
     playbackIdRef.current += 1;
     cancelCurrentAudio();
+    if (endCallbackTimeoutRef.current) {
+      clearTimeout(endCallbackTimeoutRef.current);
+      endCallbackTimeoutRef.current = null;
+    }
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -117,9 +202,6 @@ export function useAudio(ttsEnabled = true) {
   );
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      noSleepRef.current = new NoSleep();
-    }
     return () => {
       if (speakTimeoutRef.current) {
         clearTimeout(speakTimeoutRef.current);
@@ -129,11 +211,11 @@ export function useAudio(ttsEnabled = true) {
         clearTimeout(dingTimeoutRef.current);
         dingTimeoutRef.current = null;
       }
-      if (noSleepRef.current) {
-        try {
-          noSleepRef.current.disable();
-        } catch {}
+      if (endCallbackTimeoutRef.current) {
+        clearTimeout(endCallbackTimeoutRef.current);
+        endCallbackTimeoutRef.current = null;
       }
+      disableNoSleepModule();
       playbackIdRef.current += 1;
       cancelCurrentAudio();
       if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -141,6 +223,24 @@ export function useAudio(ttsEnabled = true) {
       }
     };
   }, [cancelCurrentAudio]);
+
+  // Page-close fallback. The unmount cleanup above handles mode-switch
+  // (page.tsx mounts tabs conditionally on the active mode). This
+  // listener covers the case where the tab is closed while a hook is
+  // still mounted. Listeners are removed on unmount and the body is
+  // idempotent, so per-mount registration is safe.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const handleBeforeUnload = () => {
+      disableNoSleepModule();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const initAudio = useCallback(() => {
     if (typeof window === 'undefined' || audioCtxRef.current) {
@@ -443,7 +543,13 @@ export function useAudio(ttsEnabled = true) {
       setIsSpeaking(false);
       playDing();
       if (onEnd) {
-        setTimeout(() => onEnd(), 300);
+        if (endCallbackTimeoutRef.current) {
+          clearTimeout(endCallbackTimeoutRef.current);
+        }
+        endCallbackTimeoutRef.current = window.setTimeout(() => {
+          endCallbackTimeoutRef.current = null;
+          onEnd();
+        }, 300);
       }
     },
     [
@@ -542,22 +648,20 @@ export function useAudio(ttsEnabled = true) {
       clearTimeout(dingTimeoutRef.current);
       dingTimeoutRef.current = null;
     }
+    if (endCallbackTimeoutRef.current) {
+      clearTimeout(endCallbackTimeoutRef.current);
+      endCallbackTimeoutRef.current = null;
+    }
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
     setIsSpeaking(false);
   }, [cancelCurrentAudio]);
 
-  const enableNoSleep = useCallback(() => {
-    if (noSleepRef.current) {
-      noSleepRef.current.enable();
-    }
-  }, []);
+  const enableNoSleep = useCallback(() => enableNoSleepModule(), []);
 
   const disableNoSleep = useCallback(() => {
-    if (noSleepRef.current) {
-      noSleepRef.current.disable();
-    }
+    disableNoSleepModule();
   }, []);
 
   return {

@@ -1,6 +1,8 @@
 'use client';
 
 import React, {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -11,7 +13,8 @@ import useAudio, { type SpeechSegment } from '../hooks/useAudio';
 import { DEFAULT_PLAN } from '../schemas/default-plan';
 import type { WorkoutPlan } from '../schemas/workout-plan';
 import { getActivePlan, saveActivePlan } from '../utils/storage';
-import CustomPlanWizard from './CustomPlanWizard';
+
+const CustomPlanWizard = lazy(() => import('./CustomPlanWizard'));
 
 interface Step {
   name: string;
@@ -200,7 +203,7 @@ export default function WorkoutTab() {
       playDoubleDing();
       setIsRunning(false);
       setIsFinished(true);
-      disableNoSleep();
+      void disableNoSleep();
     }
   }, [
     currentIdx,
@@ -264,18 +267,18 @@ export default function WorkoutTab() {
       setIsRunning(true);
       const initialSegments = getStepSpeechSegments(steps[currentIdx]);
       if (hasRecordedAudio(initialSegments)) {
-        disableNoSleep();
+        void disableNoSleep();
         speakSegments(
           initialSegments,
           getSpeechNoSleepCallbacks(initialSegments, true, false),
         );
       } else {
-        enableNoSleep();
+        void enableNoSleep();
         speakSegments(initialSegments);
       }
     } else {
       setIsRunning(false);
-      disableNoSleep();
+      void disableNoSleep();
       cancelAll();
     }
   }, [
@@ -565,14 +568,16 @@ export default function WorkoutTab() {
       </div>
 
       {isWizardOpen && (
-        <CustomPlanWizard
-          onClose={() => setIsWizardOpen(false)}
-          onPlanLoaded={(plan: WorkoutPlan, id?: string) => {
-            setPlanSections(plan);
-            saveActivePlan(plan, id);
-          }}
-          activePlanId={getActivePlan()?.id}
-        />
+        <Suspense fallback={null}>
+          <CustomPlanWizard
+            onClose={() => setIsWizardOpen(false)}
+            onPlanLoaded={(plan: WorkoutPlan, id?: string) => {
+              setPlanSections(plan);
+              saveActivePlan(plan, id);
+            }}
+            activePlanId={getActivePlan()?.id}
+          />
+        </Suspense>
       )}
     </div>
   );

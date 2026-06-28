@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import {
   afterEach,
   beforeEach,
@@ -160,13 +166,21 @@ describe('WorkoutTab', () => {
     mockSpeak.mockImplementation(() => {});
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    cleanup();
     vi.unstubAllGlobals();
     // Flush any pending timers inside React's act() to avoid
     // "not wrapped in act(...)" warnings from state updates
     act(() => {
       vi.runOnlyPendingTimers();
     });
+    // Flush any in-flight async chains from this test before the next
+    // beforeEach clears shared mocks.
+    for (let i = 0; i < 3; i += 1) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
     vi.useRealTimers();
   });
 
@@ -190,11 +204,28 @@ describe('WorkoutTab', () => {
       mockAudioInstances[0]?.finish();
     });
     await act(async () => {
-      mockAudioInstances[0]?.finish();
+      await Promise.resolve();
     });
     await act(async () => {
       mockAudioInstances[0]?.finish();
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.finish();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  };
+
+  const flushAsyncAudioCallbacks = async () => {
+    for (let i = 0; i < 10; i += 1) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
   };
 
   it('uses recorded audio without falling back to browser speech synthesis', async () => {
@@ -261,13 +292,17 @@ describe('WorkoutTab', () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
     });
 
+    // NoSleep is now lazy-loaded — disable is a no-op until enable runs,
+    // and enable is deferred until after recorded audio finishes so its
+    // media element does not collide with the workout MP3 playback.
     expect(mockNoSleepEnable).not.toHaveBeenCalled();
-    expect(mockNoSleepDisable).toHaveBeenCalledTimes(1);
+    expect(mockNoSleepDisable).not.toHaveBeenCalled();
 
     await finishInitialRecordedSpeech();
     await act(async () => {
       vi.advanceTimersByTime(300);
     });
+    await flushAsyncAudioCallbacks();
 
     expect(mockNoSleepEnable).toHaveBeenCalledTimes(1);
   });
@@ -346,6 +381,14 @@ describe('WorkoutTab', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+    // enableNoSleep is now async (lazy-loads nosleep.js); flush microtasks
+    // so the dynamic import + constructor + enable() chain completes.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
     });
 
     expect(mockAudioSources).toHaveLength(0);

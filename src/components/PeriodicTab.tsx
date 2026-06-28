@@ -224,7 +224,7 @@ export default function PeriodicTab({
     unlockAudio();
     if (!isPeriodicRunning) {
       setIsPeriodicRunning(true);
-      enableNoSleep();
+      void enableNoSleep();
       speak('间歇拉伸已开启。', PERIODIC_ENABLED_AUDIO);
     } else {
       setIsPeriodicRunning(false);

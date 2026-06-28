@@ -82,13 +82,6 @@ const getPublicPrecacheUrls = () => {
     `${BASE_PATH}/manifest.webmanifest`,
   ]);
 
-  const audioDir = path.join(PUBLIC_DIR, 'audio/built-in-plans/yunxi');
-  for (const filePath of listFiles(audioDir, (entryPath) =>
-    entryPath.endsWith('.mp3'),
-  )) {
-    urls.add(toPublicUrl(path.relative(PUBLIC_DIR, filePath)));
-  }
-
   return [...urls].sort();
 };
 
