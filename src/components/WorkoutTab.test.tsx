@@ -346,6 +346,33 @@ describe('WorkoutTab', () => {
     ).toBe(true);
   });
 
+  it('fetches the remaining active plan MP3s when starting the workout', async () => {
+    mockAudioMode = 'play-success';
+
+    await act(async () => {
+      render(<WorkoutTab />);
+    });
+    mockFetch.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /开始/ }));
+    });
+    await flushAsyncAudioCallbacks();
+
+    const fetchedUrls = mockFetch.mock.calls.map((call) => String(call[0]));
+    expect(fetchedUrls.length).toBeGreaterThan(0);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planA-s1-e2-name.mp3'),
+      ),
+    ).toBe(true);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planA-s4-e4.mp3'),
+      ),
+    ).toBe(true);
+  });
+
   it('waits for mobile audio unlock before starting the first built-in MP3', async () => {
     mockAudioMode = 'play-success';
     mockAudioContextState = 'suspended';

@@ -9,6 +9,7 @@ const DING_DURATION_SECONDS = 0.5;
 const DING_REPEAT_DELAY_SECONDS = 0.3;
 const DING_SAMPLE_RATE = 22050;
 const SERVICE_WORKER_READY_TIMEOUT_MS = 3000;
+const RECORDED_AUDIO_CACHE_CONCURRENCY = 4;
 const cachedAudioFetchPaths = new Set<string>();
 const preloadedAudioPaths = new Set<string>();
 const dingDataUrls = new Map<number, string>();
@@ -175,6 +176,25 @@ const waitForServiceWorkerRuntimeCache = async () => {
   ]);
 };
 
+const runWithConcurrency = async (
+  tasks: Array<() => Promise<void>>,
+  concurrency: number,
+) => {
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, tasks.length) },
+    async () => {
+      while (nextIndex < tasks.length) {
+        const task = tasks[nextIndex];
+        nextIndex += 1;
+        await task();
+      }
+    },
+  );
+
+  await Promise.allSettled(workers);
+};
+
 const enableNoSleepModule = async () => {
   if (typeof window === 'undefined') {
     return;
@@ -323,17 +343,17 @@ export function useAudio(ttsEnabled = true) {
 
       const audioPaths = Array.isArray(audioPath) ? audioPath : [audioPath];
       await waitForServiceWorkerRuntimeCache();
-      await Promise.allSettled(
-        audioPaths.filter(Boolean).map(async (path) => {
-          const resolvedPath = resolveAudioPath(path);
-          if (cachedAudioFetchPaths.has(resolvedPath)) {
-            return;
-          }
+      const fetchTasks = audioPaths.filter(Boolean).map((path) => async () => {
+        const resolvedPath = resolveAudioPath(path);
+        if (cachedAudioFetchPaths.has(resolvedPath)) {
+          return;
+        }
 
-          cachedAudioFetchPaths.add(resolvedPath);
-          await fetch(resolvedPath);
-        }),
-      );
+        cachedAudioFetchPaths.add(resolvedPath);
+        await fetch(resolvedPath, { cache: 'force-cache' });
+      });
+
+      await runWithConcurrency(fetchTasks, RECORDED_AUDIO_CACHE_CONCURRENCY);
     },
     [],
   );

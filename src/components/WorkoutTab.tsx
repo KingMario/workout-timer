@@ -384,6 +384,10 @@ export default function WorkoutTab() {
         return;
       }
       await unlockAudio();
+      const audioPaths = collectPlanAudioPaths(planSections);
+      if (audioPaths.length > 0) {
+        void cacheRecordedAudio(audioPaths);
+      }
       setIsRunning(true);
       const initialSegments = getStepSpeechSegments(steps[currentIdx]);
       if (hasRecordedAudio(initialSegments)) {
@@ -406,6 +410,8 @@ export default function WorkoutTab() {
     isFinished,
     handleReset,
     unlockAudio,
+    planSections,
+    cacheRecordedAudio,
     getStepSpeechSegments,
     getSpeechNoSleepCallbacks,
     speakSegments,
