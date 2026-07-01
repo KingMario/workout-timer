@@ -141,6 +141,13 @@ const PLAN_MODULES = [
     file: 'src/schemas/leg-slimming-plans.ts',
     exportName: 'LEG_SLIMMING_SCULPT_PLAN',
   },
+  {
+    key: 'planT',
+    id: 'bed-exercise-morning',
+    title: '床上晨间激活',
+    file: 'src/schemas/bed-exercise-plans.ts',
+    exportName: 'BED_EXERCISE_MORNING_PLAN',
+  },
 ];
 
 const PERIODIC_PROMPTS = [

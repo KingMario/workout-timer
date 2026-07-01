@@ -166,4 +166,40 @@ describe('built-in plan audio helpers', () => {
       'audio/built-in-plans/yunxi/planR-s2-e1.mp3',
     );
   });
+
+  it('registers bed exercise plan with conservative split-side steps and structured audio', () => {
+    const planIds = BUILT_IN_PLANS.map((plan) => plan.id);
+
+    expect(planIds).toContain('bed-exercise-morning');
+
+    const plan = BUILT_IN_PLANS.find(
+      (builtInPlan) => builtInPlan.id === 'bed-exercise-morning',
+    );
+    const allSteps = plan?.data.flatMap((section) => section.steps) ?? [];
+    const userFacingText = [
+      plan?.title,
+      plan?.description,
+      ...(plan?.data.flatMap((section) => [
+        section.name,
+        section.tips,
+        ...section.steps.flatMap((step) => [step.name, step.desc]),
+      ]) ?? []),
+    ].filter(Boolean);
+
+    expect(plan?.data[0].audio).toBe('audio/built-in-plans/yunxi/planT-s1.mp3');
+    expect(plan?.data[1].steps[0].nameAudio).toBe(
+      'audio/built-in-plans/yunxi/planT-s2-e1-name.mp3',
+    );
+    expect(allSteps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: '左侧上臂屈伸' }),
+        expect.objectContaining({ name: '右侧上臂屈伸' }),
+        expect.objectContaining({ name: '左脚前掌轻压' }),
+        expect.objectContaining({ name: '右脚前掌轻压' }),
+      ]),
+    );
+    expect(userFacingText.join('\n')).not.toMatch(
+      /治疗|治愈|静脉曲张|痛风|肝脏|减掉胖肚子/,
+    );
+  });
 });

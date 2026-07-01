@@ -8,6 +8,7 @@ import {
   AGING_BACKWARDS_POSTURE_PLAN,
   AGING_BACKWARDS_WEIGHT_LOSS_PLAN,
 } from './aging-backwards-plans';
+import { BED_EXERCISE_MORNING_PLAN } from './bed-exercise-plans';
 import {
   BOOK_FULL_BODY_STRETCH_PLAN,
   BOOK_LOWER_BACK_RELIEF_PLAN,
@@ -147,6 +148,12 @@ export const BUILT_IN_PLANS: BuiltInPlan[] = [
     data: LEG_SLIMMING_SCULPT_PLAN,
     description: '适合有训练基础人群的单侧力量、有氧和拉伸计划。',
   },
+  {
+    id: 'bed-exercise-morning',
+    title: '床上晨间激活',
+    data: BED_EXERCISE_MORNING_PLAN,
+    description: '源自《躺在床上锻炼身体》的低冲击床上等长激活。',
+  },
 ];
 
 export {
@@ -158,6 +165,7 @@ export {
   AGING_BACKWARDS_PAIN_RELIEF_PLAN,
   AGING_BACKWARDS_POSTURE_PLAN,
   AGING_BACKWARDS_WEIGHT_LOSS_PLAN,
+  BED_EXERCISE_MORNING_PLAN,
   BOOK_FULL_BODY_STRETCH_PLAN,
   BOOK_LOWER_BACK_RELIEF_PLAN,
   BOOK_NECK_SHOULDER_RELIEF_PLAN,

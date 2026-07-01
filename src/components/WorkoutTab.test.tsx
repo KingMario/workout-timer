@@ -14,6 +14,7 @@ import {
   vi,
   type Mock,
 } from 'vitest';
+import { BUILT_IN_PLANS } from '../schemas';
 import WorkoutTab from './WorkoutTab';
 
 const { mockNoSleepEnable, mockNoSleepDisable } = vi.hoisted(() => ({
@@ -322,8 +323,15 @@ describe('WorkoutTab', () => {
     });
     await flushAsyncAudioCallbacks();
 
+    const expectedPreviewAudioCount = BUILT_IN_PLANS.flatMap((plan) => {
+      const section = plan.data[0];
+      const firstStep = section?.steps[0];
+      return [section?.audio, firstStep?.nameAudio, firstStep?.audio].filter(
+        Boolean,
+      );
+    }).length;
     const fetchedUrls = mockFetch.mock.calls.map((call) => String(call[0]));
-    expect(fetchedUrls).toHaveLength(57);
+    expect(fetchedUrls).toHaveLength(expectedPreviewAudioCount);
     expect(
       fetchedUrls.some((url) =>
         url.endsWith('/audio/built-in-plans/yunxi/planA-s1.mp3'),
@@ -342,6 +350,11 @@ describe('WorkoutTab', () => {
     expect(
       fetchedUrls.some((url) =>
         url.endsWith('/audio/built-in-plans/yunxi/planS-s1-e1.mp3'),
+      ),
+    ).toBe(true);
+    expect(
+      fetchedUrls.some((url) =>
+        url.endsWith('/audio/built-in-plans/yunxi/planT-s1-e1.mp3'),
       ),
     ).toBe(true);
   });

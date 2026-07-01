@@ -1,11 +1,11 @@
 # Built-In Plan Audio Audit
 
-Generated: 2026-06-28T04:20:03.297Z
+Generated: 2026-07-01T00:20:32.553Z
 Rename mode: no
 
 ## Counts
 
-- already-structured: 637
+- already-structured: 683
 
 ## Rows
 
@@ -645,6 +645,52 @@ Rename mode: no
 | already-structured | planS | exercise-name   | 3       | 4        | 左足底按摩                 | name         |              | planS-s3-e4-name.mp3     |
 | already-structured | planS | exercise        | 3       | 5        | 右足底按摩                 | description  |              | planS-s3-e5.mp3          |
 | already-structured | planS | exercise-name   | 3       | 5        | 右足底按摩                 | name         |              | planS-s3-e5-name.mp3     |
+| already-structured | planT | section         | 1       |          | 呼吸准备                   | section-name |              | planT-s1.mp3             |
+| already-structured | planT | exercise        | 1       | 1        | 仰卧鼻吸慢呼               | description  |              | planT-s1-e1.mp3          |
+| already-structured | planT | exercise-name   | 1       | 1        | 仰卧鼻吸慢呼               | name         |              | planT-s1-e1-name.mp3     |
+| already-structured | planT | exercise        | 1       | 2        | 全身轻绷放松               | description  |              | planT-s1-e2.mp3          |
+| already-structured | planT | exercise-name   | 1       | 2        | 全身轻绷放松               | name         |              | planT-s1-e2-name.mp3     |
+| already-structured | planT | exercise        | 1       | 3        | 肩胛轻耸                   | description  |              | planT-s1-e3.mp3          |
+| already-structured | planT | exercise-name   | 1       | 3        | 肩胛轻耸                   | name         |              | planT-s1-e3-name.mp3     |
+| already-structured | planT | section         | 2       |          | 侧卧上肢                   | section-name |              | planT-s2.mp3             |
+| already-structured | planT | exercise        | 2       | 1        | 左侧上臂屈伸               | description  |              | planT-s2-e1.mp3          |
+| already-structured | planT | exercise-name   | 2       | 1        | 左侧上臂屈伸               | name         |              | planT-s2-e1-name.mp3     |
+| already-structured | planT | exercise        | 2       | 2        | 右侧上臂屈伸               | description  |              | planT-s2-e2.mp3          |
+| already-structured | planT | exercise-name   | 2       | 2        | 右侧上臂屈伸               | name         |              | planT-s2-e2-name.mp3     |
+| already-structured | planT | exercise        | 2       | 3        | 左侧手臂旋转               | description  |              | planT-s2-e3.mp3          |
+| already-structured | planT | exercise-name   | 2       | 3        | 左侧手臂旋转               | name         |              | planT-s2-e3-name.mp3     |
+| already-structured | planT | exercise        | 2       | 4        | 右侧手臂旋转               | description  |              | planT-s2-e4.mp3          |
+| already-structured | planT | exercise-name   | 2       | 4        | 右侧手臂旋转               | name         |              | planT-s2-e4-name.mp3     |
+| already-structured | planT | exercise        | 2       | 5        | 左侧手腕轻抗阻             | description  |              | planT-s2-e5.mp3          |
+| already-structured | planT | exercise-name   | 2       | 5        | 左侧手腕轻抗阻             | name         |              | planT-s2-e5-name.mp3     |
+| already-structured | planT | exercise        | 2       | 6        | 右侧手腕轻抗阻             | description  |              | planT-s2-e6.mp3          |
+| already-structured | planT | exercise-name   | 2       | 6        | 右侧手腕轻抗阻             | name         |              | planT-s2-e6-name.mp3     |
+| already-structured | planT | exercise        | 2       | 7        | 左侧膝盖牵拉               | description  |              | planT-s2-e7.mp3          |
+| already-structured | planT | exercise-name   | 2       | 7        | 左侧膝盖牵拉               | name         |              | planT-s2-e7-name.mp3     |
+| already-structured | planT | exercise        | 2       | 8        | 右侧膝盖牵拉               | description  |              | planT-s2-e8.mp3          |
+| already-structured | planT | exercise-name   | 2       | 8        | 右侧膝盖牵拉               | name         |              | planT-s2-e8-name.mp3     |
+| already-structured | planT | section         | 3       |          | 腰腿激活                   | section-name |              | planT-s3.mp3             |
+| already-structured | planT | exercise        | 3       | 1        | 左侧体侧小抬               | description  |              | planT-s3-e1.mp3          |
+| already-structured | planT | exercise-name   | 3       | 1        | 左侧体侧小抬               | name         |              | planT-s3-e1-name.mp3     |
+| already-structured | planT | exercise        | 3       | 2        | 右侧体侧小抬               | description  |              | planT-s3-e2.mp3          |
+| already-structured | planT | exercise-name   | 3       | 2        | 右侧体侧小抬               | name         |              | planT-s3-e2-name.mp3     |
+| already-structured | planT | exercise        | 3       | 3        | 左膝内收抬髋               | description  |              | planT-s3-e3.mp3          |
+| already-structured | planT | exercise-name   | 3       | 3        | 左膝内收抬髋               | name         |              | planT-s3-e3-name.mp3     |
+| already-structured | planT | exercise        | 3       | 4        | 右膝内收抬髋               | description  |              | planT-s3-e4.mp3          |
+| already-structured | planT | exercise-name   | 3       | 4        | 右膝内收抬髋               | name         |              | planT-s3-e4-name.mp3     |
+| already-structured | planT | exercise        | 3       | 5        | 左脚前掌轻压               | description  |              | planT-s3-e5.mp3          |
+| already-structured | planT | exercise-name   | 3       | 5        | 左脚前掌轻压               | name         |              | planT-s3-e5-name.mp3     |
+| already-structured | planT | exercise        | 3       | 6        | 右脚前掌轻压               | description  |              | planT-s3-e6.mp3          |
+| already-structured | planT | exercise-name   | 3       | 6        | 右脚前掌轻压               | name         |              | planT-s3-e6-name.mp3     |
+| already-structured | planT | section         | 4       |          | 颈肩收尾                   | section-name |              | planT-s4.mp3             |
+| already-structured | planT | exercise        | 4       | 1        | 后脑轻推等长               | description  |              | planT-s4-e1.mp3          |
+| already-structured | planT | exercise-name   | 4       | 1        | 后脑轻推等长               | name         |              | planT-s4-e1-name.mp3     |
+| already-structured | planT | exercise        | 4       | 2        | 左侧下巴靠肩               | description  |              | planT-s4-e2.mp3          |
+| already-structured | planT | exercise-name   | 4       | 2        | 左侧下巴靠肩               | name         |              | planT-s4-e2-name.mp3     |
+| already-structured | planT | exercise        | 4       | 3        | 右侧下巴靠肩               | description  |              | planT-s4-e3.mp3          |
+| already-structured | planT | exercise-name   | 4       | 3        | 右侧下巴靠肩               | name         |              | planT-s4-e3-name.mp3     |
+| already-structured | planT | exercise        | 4       | 4        | 仰卧慢呼吸                 | description  |              | planT-s4-e4.mp3          |
+| already-structured | planT | exercise-name   | 4       | 4        | 仰卧慢呼吸                 | name         |              | planT-s4-e4-name.mp3     |
 | already-structured | planC | periodic-prompt |         |          | 间歇拉伸已开启。           | fixed-prompt |              | periodic-enabled.mp3     |
 | already-structured | planC | periodic-prompt |         |          | 休息时间到了。第一个动作： | fixed-prompt |              | periodic-break-start.mp3 |
 | already-structured | planC | periodic-prompt |         |          | 休息结束，继续工作吧。     | fixed-prompt |              | periodic-break-end.mp3   |

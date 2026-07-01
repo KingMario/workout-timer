@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v470f1e8';
+const CACHE_VERSION = 'v4cae7946';
 const APP_CACHE = `workout-timer-app-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `workout-timer-runtime-${CACHE_VERSION}`;
 const BASE_PATH = '/workout-timer';
